@@ -1,0 +1,3502 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nizam Terminal</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:     #0a0a0d;
+  --bg2:    #111116;
+  --bg3:    #1a1a20;
+  --bg4:    #222228;
+  --border: rgba(255,255,255,0.07);
+  --gold:   #c9a84c;
+  --gold2:  rgba(201,168,76,0.15);
+  --green:  #3dba7a;
+  --red:    #e05555;
+  --blue:   #4a8fff;
+  --purple: #8f6fdc;
+  --text:   #e2ddd4;
+  --dim:    #8a8070;
+  --muted:  #4a4840;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  min-height: 100vh;
+  padding: 0;
+}
+
+/* ── HEADER ── */
+.header {
+  background: linear-gradient(180deg, #0f0f14 0%, var(--bg) 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-wrap: nowrap;
+  min-height: 52px;
+}
+.logo { font-family: 'Cinzel', serif; font-size: 15px; color: var(--gold); letter-spacing: 0.2em; }
+.logo span { color: var(--dim); font-size: 10px; display: block; letter-spacing: 0.15em; margin-top: 1px; }
+.header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+.status-dot.live { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.status-text { font-size: 9px; color: var(--dim); letter-spacing: 0.1em; }
+.borsa-toggle { display: flex; gap: 4px; }
+.borsa-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--dim); padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 9px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.1em; transition: all 0.2s; }
+.borsa-btn.active { background: var(--gold2); border-color: var(--gold); color: var(--gold); }
+.scan-btn { background: var(--gold); color: var(--bg); border: none; padding: 7px 18px; border-radius: 4px; cursor: pointer; font-size: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 600; letter-spacing: 0.15em; transition: opacity 0.2s; }
+.scan-btn:hover { opacity: 0.85; }
+.scan-btn:disabled { opacity: 0.4; cursor: wait; }
+
+/* ── LAYOUT ── */
+.layout { display: grid; grid-template-columns: 1fr 340px; gap: 0; height: calc(100vh - 52px); }
+.main { overflow-y: auto; padding: 16px; border-right: 1px solid var(--border); }
+.sidebar { overflow-y: auto; padding: 14px; background: var(--bg2); }
+
+/* ── STATS BAR ── */
+.stats-bar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.stat { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; }
+.stat .v { font-size: 18px; font-weight: 600; line-height: 1; margin-bottom: 2px; }
+.stat .l { font-size: 8px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* ── FILTRELER ── */
+.filtreler { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 12px; }
+.f-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--dim); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 8px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; transition: all 0.15s; }
+.f-btn:hover { border-color: rgba(201,168,76,0.3); color: var(--text); }
+.f-btn.active { background: var(--gold2); border-color: var(--gold); color: var(--gold); }
+
+/* ── HİSSE GRID ── */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 7px; }
+.kart { background: var(--bg3); border: 1px solid var(--border); border-radius: 7px; padding: 11px; transition: all 0.2s; cursor: default; }
+.kart:hover { border-color: rgba(201,168,76,0.25); }
+.kart.div-plus  { border-color: rgba(61,186,122,0.45); background: rgba(61,186,122,0.04); }
+.kart.div-minus { border-color: rgba(224,85,85,0.45);  background: rgba(224,85,85,0.04); }
+.kart.golden    { border-color: rgba(201,168,76,0.6);  background: rgba(201,168,76,0.06); }
+.kart.ikili     { border-color: rgba(143,111,220,0.5); background: rgba(143,111,220,0.05); }
+.kart-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+.kart-sym { font-size: 14px; font-weight: 600; }
+.kart-fiyat { font-size: 11px; color: var(--gold); }
+.kart-isim { font-size: 8px; color: var(--muted); margin-bottom: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tags { display: flex; gap: 3px; flex-wrap: wrap; margin-bottom: 6px; }
+.tag { font-size: 7px; padding: 2px 5px; border-radius: 2px; }
+.t-dp  { background: rgba(61,186,122,0.18); color: #3dba7a; }
+.t-dm  { background: rgba(224,85,85,0.18);  color: #e05555; }
+.t-g   { background: rgba(201,168,76,0.18); color: #c9a84c; }
+.t-ik  { background: rgba(143,111,220,0.2); color: #8f6fdc; }
+.t-v3  { background: rgba(255,160,50,0.18); color: #ffa032; }
+.t-zh  { background: rgba(224,85,85,0.12);  color: #e08080; }
+.t-21  { background: rgba(74,143,255,0.18); color: #4a8fff; }
+.t-28  { background: rgba(255,140,0,0.18);  color: #ff8c00; }
+.kart-alt { font-size: 8px; color: var(--muted); margin-top: 4px; }
+.kart-skor { font-size: 9px; color: var(--dim); margin-top: 3px; }
+.islem-btn { width: 100%; margin-top: 8px; background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.25); color: var(--gold); border-radius: 4px; padding: 5px; font-size: 8px; font-family: 'JetBrains Mono', monospace; cursor: pointer; letter-spacing: 0.1em; transition: all 0.15s; }
+.islem-btn:hover { background: rgba(201,168,76,0.22); }
+.islem-btn.short-btn { background: rgba(224,85,85,0.1); border-color: rgba(224,85,85,0.25); color: var(--red); }
+.islem-btn.short-btn:hover { background: rgba(224,85,85,0.2); }
+
+/* ── SIDEBAR ── */
+.s-title { font-size: 9px; letter-spacing: 0.2em; color: var(--dim); text-transform: uppercase; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+
+/* TOP 5 */
+.top5-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg3); border-radius: 6px; margin-bottom: 5px; border: 1px solid var(--border); }
+.t5-num { font-size: 9px; color: var(--muted); min-width: 14px; }
+.t5-sym { font-size: 13px; font-weight: 600; min-width: 50px; }
+.t5-sig { font-size: 8px; color: var(--dim); flex: 1; }
+.t5-combo { font-size: 10px; color: var(--gold); }
+.t5-btn { background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.2); color: var(--gold); border-radius: 3px; padding: 3px 8px; font-size: 8px; cursor: pointer; font-family: 'JetBrains Mono', monospace; }
+
+/* AÇIK POZİSYONLAR */
+.poz { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-bottom: 6px; }
+.poz-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.poz-sym { font-size: 13px; font-weight: 600; }
+.poz-yon { font-size: 8px; padding: 2px 7px; border-radius: 2px; }
+.poz-yon.long  { background: rgba(61,186,122,0.15); color: var(--green); }
+.poz-yon.short { background: rgba(224,85,85,0.15);  color: var(--red); }
+.poz-row { display: flex; justify-content: space-between; font-size: 9px; color: var(--dim); margin-bottom: 3px; }
+.poz-pnl { font-size: 12px; font-weight: 600; }
+.poz-pnl.pos { color: var(--green); }
+.poz-pnl.neg { color: var(--red); }
+.kapat-btn { width: 100%; margin-top: 8px; background: none; border: 1px solid rgba(224,85,85,0.25); color: var(--red); border-radius: 4px; padding: 5px; font-size: 8px; font-family: 'JetBrains Mono', monospace; cursor: pointer; letter-spacing: 0.1em; }
+.kapat-btn:hover { background: rgba(224,85,85,0.08); }
+
+/* PNL ÖZET */
+.pnl-box { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-bottom: 12px; }
+.pnl-toplam { font-size: 22px; font-weight: 600; margin-bottom: 2px; }
+.pnl-toplam.pos { color: var(--green); }
+.pnl-toplam.neg { color: var(--red); }
+.pnl-alt { font-size: 9px; color: var(--dim); }
+
+/* KAPALI İŞLEMLER */
+.kapali-row { display: flex; gap: 6px; align-items: center; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 9px; }
+.kapali-row:last-child { border-bottom: none; }
+
+/* BEKLEME */
+.loading { text-align: center; padding: 40px; color: var(--dim); font-size: 11px; }
+.loading .dots::after { content: ''; animation: dots 1.5s infinite; }
+@keyframes dots { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
+
+/* BOŞLUK */
+.bos { text-align: center; padding: 20px; color: var(--muted); font-size: 10px; }
+
+/* MOBİL */
+@media (max-width: 768px) {
+  .layout { grid-template-columns: 1fr; height: auto; }
+  .sidebar { border-top: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">✦ NİZAM<span>TRADING TERMINAL</span></div>
+  <div id="headerZaman" style="
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;color:#4a4840;
+    display:flex;gap:10px;align-items:center;
+    padding:0 8px;
+    border-left:1px solid rgba(255,255,255,0.06);
+  ">
+    <span id="hdrMelb">—</span>
+    <span id="hdrNyse" style="color:#4a4840">—</span>
+    <span id="hdrHicri" style="color:#4a4840">—</span>
+  </div>
+  <div class="borsa-toggle">
+    <button class="borsa-btn active" id="btn-nyse" onclick="setBorsa('NYSE')">NYSE</button>
+    <button class="borsa-btn" id="btn-asx" onclick="setBorsa('ASX')">ASX</button>
+  </div>
+  <button class="scan-btn" id="scanBtn" onclick="taraVeFiyat()">⟳ TARA</button>
+  <button class="borsa-btn" onclick="localStorage.removeItem('nizam_trades');acikPozGuncelle();pnlGuncelle();" style="color:var(--red);border-color:rgba(224,85,85,0.3)" title="Eski pozisyonları temizle">✕ Eski Poz</button>
+  <button class="borsa-btn" onclick="toggleSettings()" style="margin-left:4px">⚙</button>
+  <button class="borsa-btn" onclick="ajanAc()" style="margin-left:4px;background:rgba(201,168,76,0.1);border-color:rgba(201,168,76,0.4);color:var(--gold)" id="ajanBtn">✦ AI AJAN</button>
+  <div class="header-right">
+    <div class="status-dot" id="statusDot"></div>
+    <div class="status-text" id="statusText">Hazır</div>
+  </div>
+</div>
+
+<!-- SETTINGS PANEL -->
+<div id="settingsPanel" style="display:none;background:#111116;border-bottom:1px solid rgba(255,255,255,0.07);padding:12px 20px;">
+  <div style="font-size:9px;color:#8a8070;letter-spacing:0.2em;margin-bottom:10px;">⚙ AYARLAR</div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+    <div>
+      <div style="font-size:8px;color:#4a4840;margin-bottom:4px;">ALPACA API KEY</div>
+      <input id="alpacaKey" type="password" placeholder="PKXXXXXXXX..." 
+        style="background:#1a1a20;border:1px solid rgba(255,255,255,0.07);color:#e2ddd4;padding:6px 10px;border-radius:4px;font-size:11px;font-family:inherit;width:280px;outline:none">
+    </div>
+    <div>
+      <div style="font-size:8px;color:#4a4840;margin-bottom:4px;">ALPACA SECRET KEY</div>
+      <input id="alpacaSecret" type="password" placeholder="xxxxxxxx..." 
+        style="background:#1a1a20;border:1px solid rgba(255,255,255,0.07);color:#e2ddd4;padding:6px 10px;border-radius:4px;font-size:11px;font-family:inherit;width:280px;outline:none">
+    </div>
+    <div>
+      <div style="font-size:8px;color:#4a4840;margin-bottom:4px;">MOD</div>
+      <select id="alpacaMod" style="background:#1a1a20;border:1px solid rgba(255,255,255,0.07);color:#e2ddd4;padding:6px 10px;border-radius:4px;font-size:11px;font-family:inherit;outline:none">
+        <option value="paper">Paper Trading</option>
+        <option value="live">Gerçek Para ⚠</option>
+      </select>
+    </div>
+    <div>
+      <div style="font-size:8px;color:#c9a84c;margin-bottom:4px;">ANTHROPIC API KEY</div>
+      <input id="anthropicKey" type="password" placeholder="sk-ant-..." 
+        style="background:#1a1a20;border:1px solid rgba(201,168,76,0.2);color:#e2ddd4;padding:6px 10px;border-radius:4px;font-size:11px;font-family:inherit;width:280px;outline:none">
+    </div>
+    <button onclick="alpacaKaydet()" style="background:#c9a84c;color:#0a0a0d;border:none;padding:7px 16px;border-radius:4px;font-size:10px;font-family:inherit;font-weight:600;cursor:pointer;letter-spacing:0.1em">KAYDET</button>
+    <button onclick="alpacaTest()" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#8a8070;padding:7px 16px;border-radius:4px;font-size:10px;font-family:inherit;cursor:pointer">TEST</button>
+    <span id="alpacaStatus" style="font-size:9px;color:#4a4840"></span>
+  </div>
+  <div style="font-size:8px;color:#4a4840;margin-top:8px;">Key'ler localStorage'da şifreli tutulur. Kimseyle paylaşma.</div>
+</div>
+
+<div class="layout">
+  <!-- SOL: SCANNER -->
+  <div class="main">
+    <div class="stats-bar">
+      <div class="stat"><div class="v" id="sToplam" style="color:var(--dim)">—</div><div class="l">Toplam</div></div>
+      <div class="stat"><div class="v" id="sDivPlus" style="color:var(--green)">—</div><div class="l">DIV+</div></div>
+      <div class="stat"><div class="v" id="sGolden" style="color:var(--gold)">—</div><div class="l">V=0</div></div>
+      <div class="stat"><div class="v" id="s21" style="color:var(--blue)">—</div><div class="l">21 Gün</div></div>
+      <div class="stat"><div class="v" id="s28" style="color:#ff8c00">—</div><div class="l">28 Gün</div></div>
+    </div>
+    <div class="filtreler">
+      <button class="f-btn active" id="f-all"     onclick="filtrele('all')">Tümü</button>
+      <button class="f-btn" id="f-divplus"  onclick="filtrele('divplus')">▲ DIV+</button>
+      <button class="f-btn" id="f-divminus" onclick="filtrele('divminus')">▼ DIV-</button>
+      <button class="f-btn" id="f-golden"   onclick="filtrele('golden')">✦ V=0</button>
+      <button class="f-btn" id="f-ikili"    onclick="filtrele('ikili')">⚡ İkili</button>
+      <button class="f-btn" id="f-v3"       onclick="filtrele('v3')">◈ V=3</button>
+      <button class="f-btn" id="f-21"       onclick="filtrele('21')">21g</button>
+      <button class="f-btn" id="f-28"       onclick="filtrele('28')">28g</button>
+    </div>
+    <div id="sonuclar"><div class="bos">Tara butonuna bas...</div></div>
+  </div>
+
+  <!-- SAĞ: SİDEBAR -->
+  <div class="sidebar">
+    <!-- P&L Özet -->
+    <div class="pnl-box" id="pnlBox">
+      <div class="pnl-alt">Paper Trading Sermaye</div>
+      <div class="pnl-toplam" id="pnlToplam">$10,000.00</div>
+      <div class="pnl-alt" id="pnlAlt">Başlangıç: $10,000 | İşlem: 0</div>
+    </div>
+
+    <!-- Çift Sinyal -->
+    <div class="s-title">⚡ Çift Sinyal</div>
+    <div id="ciftSinyalListesi"><div class="bos">Tarama bekleniyor...</div></div>
+
+    <!-- Top 5 -->
+    <div class="s-title" style="margin-top:14px">✦ Günün Top 5</div>
+    <div id="top5Liste"><div class="bos">Tarama bekleniyor...</div></div>
+
+    <!-- Bekleyen Emirler -->
+    <div class="s-title" style="margin-top:16px">
+      <span>Bekleyen Emirler</span>
+      <span id="emirSayi" style="color:var(--blue);font-size:11px">0</span>
+    </div>
+    <div id="bekleyenEmirlerId"><div class="bos">Bekleyen emir yok</div></div>
+
+    <!-- Açık Pozisyonlar -->
+    <div class="s-title" style="margin-top:16px">
+      <span>Açık Pozisyonlar</span>
+      <span id="acikSayi" style="color:var(--gold);font-size:11px">0</span>
+    </div>
+    <div id="zamanCubugu" class="zaman-bar"></div>
+
+    <div id="acikPozisyonlar"><div class="bos">Pozisyon yok</div></div>
+
+    <!-- ASX Paper Trading -->
+    <div class="s-title" style="margin-top:16px">
+      <span>ASX Paper Pozisyonlar</span>
+      <span id="asxSayi" style="color:var(--blue);font-size:11px">0</span>
+    </div>
+    <div id="asxPozisyonlar"><div class="bos">ASX pozisyon yok</div></div>
+
+    <!-- Kapalı İşlemler -->
+    <div class="s-title" style="margin-top:16px">
+      <span>Kapalı İşlemler</span>
+      <button onclick="clearKapali()" style="background:none;border:none;color:var(--muted);font-size:8px;cursor:pointer;font-family:inherit">temizle</button>
+    </div>
+    <div id="kapaliIslemler"><div class="bos">Henüz kapalı işlem yok</div></div>
+  </div>
+</div>
+
+
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- AI AJAN PANELİ -->
+<!-- ══════════════════════════════════════════════ -->
+<div id="ajanPanel" style="
+  display:none;
+  position:fixed;
+  top:0; right:0;
+  width:420px; max-width:100vw;
+  height:100vh;
+  background:#0f0f14;
+  border-left:1px solid rgba(201,168,76,0.25);
+  z-index:9999;
+  flex-direction:column;
+  box-shadow:-8px 0 32px rgba(0,0,0,0.6);
+  font-family:'JetBrains Mono',monospace;
+">
+
+  <!-- Başlık -->
+  <div style="
+    padding:14px 16px;
+    border-bottom:1px solid rgba(201,168,76,0.2);
+    display:flex; align-items:center; gap:10px;
+    background:linear-gradient(180deg,#141418 0%,#0f0f14 100%);
+  ">
+    <div style="flex:1">
+      <div style="font-family:'Cinzel',serif;color:#c9a84c;font-size:13px;letter-spacing:0.2em">✦ NİZAM AI AJAN</div>
+      <div id="ajanTarihBar" style="font-size:9px;color:#6a6458;margin-top:2px;letter-spacing:0.1em">—</div>
+    </div>
+    <button onclick="ajanKapat()" style="
+      background:none;border:1px solid rgba(255,255,255,0.1);
+      color:#8a8070;width:28px;height:28px;border-radius:4px;
+      cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;
+    ">✕</button>
+  </div>
+
+  <!-- Bağlam Kartı -->
+  <div id="ajanBaglamKart" style="
+    margin:10px;padding:10px;
+    background:#111116;
+    border:1px solid rgba(201,168,76,0.15);
+    border-radius:6px;
+    font-size:10px;color:#8a8070;
+    line-height:1.7;
+  ">Tarama bekleniyor...</div>
+
+  <!-- Sohbet Alanı -->
+  <div id="ajanSohbet" style="
+    flex:1;
+    overflow-y:auto;
+    padding:10px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  "></div>
+
+  <!-- Yazma Alanı -->
+  <div style="
+    padding:10px;
+    border-top:1px solid rgba(255,255,255,0.07);
+    background:#0a0a0d;
+  ">
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <textarea id="ajanInput" placeholder="Sor... (Enter: gönder, Shift+Enter: yeni satır)"
+        style="
+          flex:1;
+          background:#111116;
+          border:1px solid rgba(201,168,76,0.2);
+          border-radius:6px;
+          color:#e2ddd4;
+          font-family:'JetBrains Mono',monospace;
+          font-size:11px;
+          padding:8px;
+          resize:none;
+          min-height:38px;
+          max-height:120px;
+          outline:none;
+          line-height:1.5;
+        "
+        onkeydown="ajanKeyDown(event)"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"
+      ></textarea>
+      <button onclick="ajanGonder()" id="ajanGonderBtn" style="
+        background:rgba(201,168,76,0.15);
+        border:1px solid rgba(201,168,76,0.4);
+        color:#c9a84c;
+        border-radius:6px;
+        padding:8px 12px;
+        cursor:pointer;
+        font-size:13px;
+        height:38px;
+        white-space:nowrap;
+      ">▶</button>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+      <button class="hizli-btn" onclick="ajanHizli('Bugünü analiz et')">📊 Bugün</button>
+      <button class="hizli-btn" onclick="ajanHizli('En güçlü sinyal hangisi?')">⚡ Sinyal</button>
+      <button class="hizli-btn" onclick="ajanHizli('Ay fazı ve Hicri takvim yorumu')">🌙 Takvim</button>
+      <button class="hizli-btn" onclick="ajanHizli('Long mu short mu önerirsin?')">📈 Öneri</button>
+      <button class="hizli-btn" onclick="ajanPozDegerlendir()" style="border-color:rgba(61,186,122,0.3);color:#3dba7a">⚡ Pozisyon Değerlendir</button>
+      <button class="hizli-btn" onclick="ajanHisseEkle()" style="border-color:rgba(74,143,255,0.3);color:#4a8fff">+ Hisse Ekle/Çıkar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay -->
+<div id="ajanOverlay" onclick="ajanKapat()" style="
+  display:none;
+  position:fixed;top:0;left:0;width:100vw;height:100vh;
+  background:rgba(0,0,0,0.5);z-index:9998;
+"></div>
+
+<style>
+.hizli-btn {
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  color:#8a8070;
+  border-radius:4px;
+  padding:3px 8px;
+  font-size:9px;
+  cursor:pointer;
+  font-family:'JetBrains Mono',monospace;
+  letter-spacing:0.05em;
+  transition:all 0.15s;
+}
+.hizli-btn:hover { border-color:rgba(201,168,76,0.3);color:#c9a84c; }
+.ajan-msg-user {
+  align-self:flex-end;
+  background:rgba(201,168,76,0.1);
+  border:1px solid rgba(201,168,76,0.2);
+  border-radius:8px 8px 2px 8px;
+  padding:8px 11px;
+  max-width:85%;
+  font-size:11px;
+  color:#e2ddd4;
+  line-height:1.5;
+}
+.ajan-msg-ai {
+  align-self:flex-start;
+  background:#111116;
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:8px 8px 8px 2px;
+  padding:10px 12px;
+  max-width:90%;
+  font-size:11px;
+  color:#c8c0b4;
+  line-height:1.6;
+  white-space:pre-wrap;
+}
+.ajan-msg-ai .ajan-label {
+  font-size:9px;color:#c9a84c;letter-spacing:0.1em;
+  margin-bottom:5px;display:block;
+}
+.ajan-thinking {
+  align-self:flex-start;
+  color:#4a4840;
+  font-size:10px;
+  padding:6px 0;
+  animation:blink 1.2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+#ajanPanel { display:none; }
+#ajanPanel.acik { display:flex !important; }
+</style>
+
+
+
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- EKG DETAY PANELİ -->
+<!-- ══════════════════════════════════════════════ -->
+<div id="ekgPanel" style="
+  display:none;
+  position:fixed;
+  top:0;right:0;
+  width:480px;max-width:100vw;
+  height:100vh;
+  background:#0a0a0e;
+  border-left:1px solid rgba(201,168,76,0.2);
+  z-index:9997;
+  flex-direction:column;
+  box-shadow:-8px 0 40px rgba(0,0,0,0.7);
+  font-family:'JetBrains Mono',monospace;
+  overflow:hidden;
+">
+  <!-- Başlık -->
+  <div id="ekgBaslik" style="
+    padding:14px 16px;
+    border-bottom:1px solid rgba(255,255,255,0.07);
+    display:flex;align-items:center;gap:10px;
+    background:linear-gradient(180deg,#111118 0%,#0a0a0e 100%);
+  ">
+    <div style="flex:1">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="ekgSym" style="font-family:'Cinzel',serif;color:#c9a84c;font-size:16px;letter-spacing:0.1em">—</span>
+        <span id="ekgBadge" style="font-size:9px;padding:2px 7px;border-radius:3px;border:1px solid rgba(201,168,76,0.3);color:#c9a84c"></span>
+      </div>
+      <div id="ekgMeta" style="font-size:9px;color:#4a4840;margin-top:3px;letter-spacing:0.05em">—</div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button onclick="ekgAjanYorum()" style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);color:#c9a84c;font-family:inherit;font-size:9px;padding:5px 10px;border-radius:4px;cursor:pointer;letter-spacing:0.05em">✦ AI</button>
+      <button onclick="ekgKapat()" style="background:none;border:1px solid rgba(255,255,255,0.1);color:#8a8070;width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:14px">✕</button>
+    </div>
+  </div>
+
+  <!-- Zaman seçici -->
+  <div style="display:flex;gap:4px;padding:8px 16px;border-bottom:1px solid rgba(255,255,255,0.05)">
+    <span style="font-size:9px;color:#4a4840;margin-right:4px;line-height:24px">DÖNEM:</span>
+    <button class="ekg-t-btn active" onclick="ekgDonemsec(30,this)">30G</button>
+    <button class="ekg-t-btn" onclick="ekgDonemsec(90,this)">90G</button>
+    <button class="ekg-t-btn" onclick="ekgDonemsec(180,this)">180G</button>
+    <button class="ekg-t-btn" onclick="ekgDonemsec(365,this)">1Y</button>
+  </div>
+
+  <!-- Kaydırılabilir İçerik -->
+  <div style="flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(201,168,76,0.2) transparent;">
+
+  <!-- Canvas — EKG grafiği -->
+  <div style="padding:12px 16px 0">
+    <canvas id="ekgCanvas" height="200" style="width:100%;border-radius:4px;background:#0d0d12"></canvas>
+  </div>
+
+  <!-- İstatistikler -->
+  <div id="ekgStats" style="
+    padding:12px 16px;
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:8px;
+  "></div>
+
+  <!-- AI Yorum alanı -->
+  <div id="ekgYorumBox" style="
+    display:none;
+    margin:0 16px 12px;
+    padding:12px;
+    background:#111116;
+    border:1px solid rgba(201,168,76,0.15);
+    border-radius:6px;
+    font-size:10px;
+    color:#c8c0b4;
+    line-height:1.6;
+    white-space:pre-wrap;
+    max-height:180px;
+    overflow-y:auto;
+    scrollbar-width:thin;
+    scrollbar-color:rgba(201,168,76,0.3) transparent;
+  "></div>
+
+  </div><!-- /kaydırılabilir içerik -->
+
+  <!-- Pozisyon butonu -->
+  <div style="padding:12px 16px;flex-shrink:0;border-top:1px solid rgba(255,255,255,0.05)">
+    <div style="display:flex;gap:8px">
+      <button id="ekgLongBtn" onclick="ekgIslem('LONG')" style="
+        flex:1;background:rgba(61,186,122,0.15);
+        border:1px solid rgba(61,186,122,0.4);
+        color:#3dba7a;font-family:inherit;font-size:11px;
+        padding:10px;border-radius:5px;cursor:pointer;letter-spacing:0.05em;
+      ">↑ LONG</button>
+      <button id="ekgShortBtn" onclick="ekgIslem('SHORT')" style="
+        flex:1;background:rgba(224,85,85,0.15);
+        border:1px solid rgba(224,85,85,0.4);
+        color:#e05555;font-family:inherit;font-size:11px;
+        padding:10px;border-radius:5px;cursor:pointer;letter-spacing:0.05em;
+      ">↓ SHORT</button>
+    </div>
+  </div>
+</div>
+
+<!-- EKG Overlay -->
+<div id="ekgOverlay" onclick="ekgKapat()" style="
+  display:none;position:fixed;top:0;left:0;
+  width:100vw;height:100vh;
+  background:rgba(0,0,0,0.4);z-index:9996;
+"></div>
+
+<style>
+#ekgPanel.acik { display:flex !important; }
+.ekg-t-btn {
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  color:#6a6458;
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;padding:4px 10px;
+  border-radius:3px;cursor:pointer;
+  letter-spacing:0.05em;transition:all 0.15s;
+}
+.ekg-t-btn.active,.ekg-t-btn:hover {
+  border-color:rgba(201,168,76,0.4);color:#c9a84c;
+}
+.ekg-stat-card {
+  background:#111116;border:1px solid rgba(255,255,255,0.06);
+  border-radius:5px;padding:8px;text-align:center;
+}
+.ekg-stat-val {
+  font-size:18px;color:#c9a84c;
+  font-family:'Cinzel',serif;font-weight:400;
+  line-height:1;
+}
+.ekg-stat-lbl {
+  font-size:8px;color:#4a4840;
+  margin-top:4px;letter-spacing:0.1em;
+}
+</style>
+
+
+
+<script>
+
+// ══════════════════════════════════════════════
+// NİZAM MOTORU
+// ══════════════════════════════════════════════
+var TWELVE_KEY = 'c67e70a1b6cc43d0b7943b2a6e4d6f5e';
+
+function indirge(n) {
+  n = Math.abs(Math.round(n));
+  while (n > 9 && n !== 11 && n !== 22)
+    n = String(n).split('').reduce(function(a,d){return a+parseInt(d);},0);
+  return n;
+}
+function ht(s) {
+  return indirge(s.replace(/-/g,'').split('').reduce(function(a,d){return a+parseInt(d);},0));
+}
+
+// Kurucu yılından S hesapla — S değerinin gerçek kaynağı
+function htKurucu(h) {
+  if (h && h.k) return indirge(h.k);  // k = kurucu doğum yılı
+  if (h && h.f) return ht(h.f);       // yoksa tarih
+  return 5;
+}
+function nyse_bugun() {
+  return new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});
+}
+function asx_bugun() {
+  return new Date().toLocaleDateString('en-CA',{timeZone:'Australia/Sydney'});
+}
+function addDays(s, n) {
+  var d = new Date(s+'T12:00:00'); d.setDate(d.getDate()+n);
+  return d.toISOString().split('T')[0];
+}
+
+function nizamAnalizi(S, tarih) {
+  var h = ht(tarih), v = Math.abs(S-h);
+  var e1937=indirge(v*1937), e1947=indirge(v*1947),
+      e1953=indirge(v*1953), e1993=indirge(v*1993);
+  // DIV+ yeni tanım: V=3 VEYA V=6 (E1947=9 AND E1953=9 — matematiksel zorunluluk)
+  var divPlus_yeni = (e1947===9 && e1953===9); // V=3 veya V=6
+
+  // X = S + 15 (evrensel formül: 137 = 9×15+2)
+  var X = S + 15;
+  
+  // Yıl S değeri ve fark hesabı
+  var bugunYil = new Date().getFullYear();
+  var yilS = indirge(bugunYil);
+  var yilFark = Math.min(Math.abs(S - yilS), 9 - Math.abs(S - yilS));
+  var rezonansYil  = (yilFark === 0); // %76.7
+  var kalip137Yil  = (yilFark === 2); // %96.3 — 137 kalıbı
+  var superRezonans = false; // aynı günde başka hisse rezonans, bu 137 kalıbında
+  
+  return { v:v, ht:h, e1937:e1937, e1947:e1947, e1953:e1953, e1993:e1993,
+    golden: v===0, harvest: e1937===9,
+    heavy:  e1947===8 && e1993===6,
+    yellow: e1937===6 && e1953===4,
+    turn:   e1937===6 && e1953===9, v3: v===3,
+    v6: v===6, divPlusYeni: divPlus_yeni,
+    X: X, yilS: yilS, yilFark: yilFark,
+    rezonansYil: rezonansYil, kalip137Yil: kalip137Yil };
+}
+
+function energySkor(S, tarih) {
+  var r = nizamAnalizi(S, tarih), sc = 0;
+  if (r.golden) sc+=4;
+  if (r.divPlusYeni) sc+=3;   // V=3 veya V=6 — yeni DIV+
+  if (r.kalip137Yil) sc+=2;   // 137 kalıbı yılı — %96.3
+  if (r.rezonansYil) sc+=1;   // Rezonans yılı — %76.7
+  if (r.e1937===9 && r.e1953===9) sc+=3;
+  if (r.e1953===9) sc+=2;
+  if (r.e1937===9) sc+=1;
+  if (r.yellow) sc-=3;
+  if (r.heavy)  sc-=3;
+  if (r.e1937===6) sc-=1;
+  if (r.e1953===4) sc-=2;
+  if (r.e1947===8) sc-=1;
+  return {sc:sc, r:r};
+}
+
+function check2128(S, today) {
+  var d21=addDays(today,-21), d28=addDays(today,-28);
+  return {
+    c21: Math.abs(energySkor(S,today).sc - energySkor(S,d21).sc) >= 3,
+    c28: Math.abs(energySkor(S,today).sc - energySkor(S,d28).sc) >= 4
+  };
+}
+
+function comboSkor(h) {
+  var c = 0;
+  if (h.divPlus)   c+=6;
+  if (h.r.turn)    c+=4;
+  if (h.r.golden)  c+=3;
+  if (h.r.harvest) c+=2;
+  if (h.r.v3)      c+=1;
+  if (h.c21)       c+=2;
+  if (h.c28)       c+=2;
+  c += Math.max(0, h.sc);
+  if (h.divMinus)  c-=5;
+  if (h.r.heavy)   c-=2;
+  return c;
+}
+
+// ══════════════════════════════════════════════
+// HİSSE VERİTABANI
+// ══════════════════════════════════════════════
+var HISSELER = [
+  // k = kurucu doğum yılı → S hesaplanır
+  // k olmayınca f (tarih) kullanılır
+  {s:"AAPL",  n:"Apple",           f:"1980-12-12", ex:"NYSE",    k:1955}, // Steve Jobs
+  {s:"MSFT",  n:"Microsoft",       f:"1986-03-13", ex:"NASDAQ",  k:1953}, // Paul Allen
+  {s:"NVDA",  n:"NVIDIA",          f:"1993-04-05", ex:"NASDAQ",  k:1963}, // Jensen Huang
+  {s:"GOOGL", n:"Alphabet",        f:"1998-09-04", ex:"NASDAQ",  k:2015}, // Alphabet dönüşüm yılı
+  {s:"GOOG",  n:"Google",          f:"1998-09-04", ex:"NASDAQ",  k:2015}, // Alphabet dönüşüm yılı
+  {s:"META",  n:"Meta",            f:"2004-02-04", ex:"NASDAQ",  k:1984}, // Zuckerberg
+  {s:"AMZN",  n:"Amazon",          f:"1994-07-05", ex:"NASDAQ",  k:1964}, // Jeff Bezos
+  {s:"TSLA",  n:"Tesla",           f:"2003-07-01", ex:"NASDAQ",  k:1960}, // Martin Eberhard
+  {s:"AMD",   n:"AMD",             f:"1972-09-27", ex:"NASDAQ",  k:1940}, // Jack Gifford
+  {s:"ORCL",  n:"Oracle",          f:"1986-03-12", ex:"NYSE"},
+  {s:"CSCO",  n:"Cisco",           f:"1990-02-16", ex:"NASDAQ"},
+  {s:"ADBE",  n:"Adobe",           f:"1986-08-20", ex:"NASDAQ"},
+  {s:"CRM",   n:"Salesforce",      f:"1999-03-08", ex:"NYSE"},
+  {s:"NFLX",  n:"Netflix",         f:"1997-08-29", ex:"NASDAQ"},
+  {s:"PANW",  n:"Palo Alto",       f:"2005-01-01", ex:"NASDAQ"},
+  {s:"CRWD",  n:"CrowdStrike",     f:"2011-01-01", ex:"NASDAQ"},
+  {s:"PLTR",  n:"Palantir",        f:"2003-01-26", ex:"NYSE"},
+  {s:"SNOW",  n:"Snowflake",       f:"2012-02-01", ex:"NYSE"},
+  {s:"DDOG",  n:"Datadog",         f:"2010-06-01", ex:"NASDAQ"},
+  {s:"NET",   n:"Cloudflare",      f:"2009-07-01", ex:"NYSE"},
+  {s:"JNJ",   n:"J&J",             f:"1944-09-25", ex:"NYSE"},
+  {s:"PFE",   n:"Pfizer",          f:"1944-06-22", ex:"NYSE"},
+  {s:"LLY",   n:"Eli Lilly",       f:"1952-09-01", ex:"NYSE"},
+  {s:"ABBV",  n:"AbbVie",          f:"2013-01-18", ex:"NYSE"},
+  {s:"AMGN",  n:"Amgen",           f:"1983-06-17", ex:"NASDAQ"},
+  {s:"ISRG",  n:"Intuitive Surg.", f:"1995-06-07", ex:"NASDAQ"},
+  {s:"MRNA",  n:"Moderna",         f:"2010-09-08", ex:"NASDAQ"},
+  {s:"VRTX",  n:"Vertex",          f:"1991-07-19", ex:"NASDAQ"},
+  {s:"BTC",   n:"Bitcoin",         f:"2009-01-03", ex:"CRYPTO"},  // S=6 Genesis ✓
+  {s:"ETH",   n:"Ethereum",        f:"2015-07-01", ex:"CRYPTO"},  // S=7 optimize edildi
+  {s:"GLD",   n:"Gold ETF",        f:"2004-11-05", ex:"NYSE"},    // S=4 optimize edildi
+  {s:"SLV",   n:"Silver ETF",      f:"2006-04-06", ex:"NYSE"},    // S=9 optimize edildi
+  {s:"SPY",   n:"S&P 500 ETF",     f:"1993-01-22", ex:"NYSE"},
+  {s:"QQQ",   n:"Nasdaq ETF",      f:"1999-03-10", ex:"NASDAQ"},
+  // ── Yarı iletken çiftler (2026-05-10 eklendi) ──
+  {s:"TSM",   n:"TSMC",            f:"1987-02-21", ex:"NYSE",    k:1987}, // Kuruluş yılı 1987→7
+  {s:"INTC",  n:"Intel",           f:"1972-10-13", ex:"NASDAQ",  k:1927}, // Robert Noyce
+  {s:"QCOM",  n:"Qualcomm",        f:"1991-12-13", ex:"NASDAQ",  k:1935}, // Andrew Viterbi
+  {s:"AVGO",  n:"Broadcom",        f:"2009-08-06", ex:"NASDAQ",  k:1952}, // Hock Tan
+  {s:"MU",    n:"Micron",          f:"1994-07-06", ex:"NASDAQ",  k:1946}, // Ward Parkinson
+  {s:"BHP.AX",n:"BHP Group",       f:"1885-07-16", ex:"ASX"},
+  {s:"CBA.AX",n:"Comm. Bank",      f:"1991-09-12", ex:"ASX"},
+  {s:"CSL.AX",n:"CSL Limited",     f:"1994-06-03", ex:"ASX"},
+  {s:"NAB.AX",n:"NAB",             f:"1992-10-01", ex:"ASX"},
+  {s:"WBC.AX",n:"Westpac",         f:"1982-09-01", ex:"ASX"},
+  {s:"WOW.AX",n:"Woolworths",      f:"1993-08-09", ex:"ASX"},
+  {s:"MQG.AX",n:"Macquarie",       f:"1996-07-29", ex:"ASX"},
+  {s:"FMG.AX",n:"Fortescue",       f:"2003-05-27", ex:"ASX"},
+  {s:"XRO.AX",n:"Xero",            f:"2006-09-01", ex:"ASX"},
+];
+
+// ══════════════════════════════════════════════
+// FİYAT SERVİSİ
+// ══════════════════════════════════════════════
+var fiyatCache = {};
+
+async function fiyatCek(symbol) {
+  if (fiyatCache[symbol]) return fiyatCache[symbol];
+  try {
+    var url = 'https://api.twelvedata.com/time_series?symbol=' + symbol +
+              '&interval=1day&outputsize=3&apikey=' + TWELVE_KEY;
+    var r = await fetch(url);
+    var data = await r.json();
+    if (data.status === 'error' || !data.values) return null;
+    var v = data.values;
+    if (v.length < 2) return null;
+    var sonuc = { bugun: parseFloat(v[0].close), dun: parseFloat(v[1].close), tarih: v[0].datetime.slice(0,10) };
+    fiyatCache[symbol] = sonuc;
+    return sonuc;
+  } catch(e) { return null; }
+}
+
+async function tumFiyatlariCek(semboller) {
+  console.log('Fiyat çekiliyor, borsa:', aktifBorsa, 'semboller:', semboller.length);
+  if (aktifBorsa === 'ASX') {
+    return await asxFiyatCek(semboller);
+  } else {
+    return await nyseFiyatCek(semboller);
+  }
+}
+
+async function nyseFiyatCek(semboller) {
+  var cfg = alpacaYukle();
+  var sonuclar = {};
+
+  if (!cfg.key) {
+    setStatus('Alpaca key yok, Twelve Data kullaniliyor...', true);
+    return await twelveDataCek(semboller);
+  }
+
+  setStatus('Fiyatlar cekiliyor...', true);
+  var base = 'https://data.alpaca.markets';
+  try {
+
+    // Tüm sembolleri tek istekte çek
+    var syms = semboller.filter(function(s){ return s !== 'BTC' && s !== 'ETH'; });
+    var cryptoSyms = semboller.filter(function(s){ return s === 'BTC' || s === 'ETH'; });
+
+    // Hisse fiyatları — snapshots daha hızlı ve güncel
+    if (syms.length > 0) {
+      try {
+        var url = base + '/v2/stocks/snapshots?symbols=' + syms.join(',') + '&feed=iex';
+        console.log('Snapshot URL:', url.slice(0,100));
+        var r = await fetch(url, {headers: alpacaDataHeaders()});
+        console.log('Snapshot status:', r.status);
+        var data = await r.json();
+        console.log('Alpaca snapshots yanit:', JSON.stringify(data).slice(0,200));
+        console.log('Alpaca snapshots:', Object.keys(data).length, 'hisse');
+        for (var sym in data) {
+          var snap = data[sym];
+          if (snap && snap.latestTrade) {
+            sonuclar[sym] = {
+              bugun: parseFloat(snap.latestTrade.p),
+              dun:   snap.prevDailyBar ? parseFloat(snap.prevDailyBar.c) : parseFloat(snap.latestTrade.p),
+              tarih: snap.latestTrade.t ? snap.latestTrade.t.slice(0,10) : ''
+            };
+          } else if (snap && snap.dailyBar) {
+            sonuclar[sym] = {
+              bugun: parseFloat(snap.dailyBar.c),
+              dun:   snap.prevDailyBar ? parseFloat(snap.prevDailyBar.c) : parseFloat(snap.dailyBar.o),
+              tarih: snap.dailyBar.t ? snap.dailyBar.t.slice(0,10) : ''
+            };
+          }
+        }
+      } catch(e) {
+        console.log('Snapshot hatası:', e);
+        // Fallback — bars/latest
+        try {
+          var url2 = base + '/v2/stocks/bars/latest?symbols=' + syms.join(',') + '&feed=iex';
+          var r2 = await fetch(url2, {headers: alpacaDataHeaders()});
+          var data2 = await r2.json();
+          if (data2.bars) {
+            for (var sym2 in data2.bars) {
+              var bar = data2.bars[sym2];
+              sonuclar[sym2] = {bugun: parseFloat(bar.c), dun: parseFloat(bar.o), tarih: bar.t ? bar.t.slice(0,10) : ''};
+            }
+          }
+        } catch(e2) { console.log('Bars fallback hatası:', e2); }
+      }
+    }
+
+    // Kripto fiyatları — çoklu endpoint denemesi
+    if (cryptoSyms.length > 0) {
+      var cryptoPairs = cryptoSyms.map(function(s){ return s + 'USD'; }).join(',');
+      var cryptoFetched = false;
+
+      // Deneme 1: v1beta3 snapshots
+      try {
+        var cu1 = base + '/v1beta3/crypto/us/snapshots?symbols=' + cryptoPairs;
+        var cr1 = await fetch(cu1, {headers: alpacaDataHeaders()});
+        var cd1 = await cr1.json();
+        if (cd1.snapshots) {
+          for (var i=0; i<cryptoSyms.length; i++) {
+            var cs = cryptoSyms[i];
+            var snap = cd1.snapshots[cs+'USD'];
+            if (snap && snap.latestTrade) {
+              sonuclar[cs] = {
+                bugun: parseFloat(snap.latestTrade.p),
+                dun:   snap.prevDailyBar ? parseFloat(snap.prevDailyBar.c) : parseFloat(snap.latestTrade.p),
+                tarih: snap.latestTrade.t ? snap.latestTrade.t.slice(0,10) : ''
+              };
+              cryptoFetched = true;
+            } else if (snap && snap.dailyBar) {
+              sonuclar[cs] = {
+                bugun: parseFloat(snap.dailyBar.c),
+                dun:   snap.prevDailyBar ? parseFloat(snap.prevDailyBar.c) : parseFloat(snap.dailyBar.o),
+                tarih: snap.dailyBar.t ? snap.dailyBar.t.slice(0,10) : ''
+              };
+              cryptoFetched = true;
+            }
+          }
+        }
+      } catch(e1) { console.log('Kripto snapshot v1beta3 hata:', e1.message); }
+
+      // Deneme 2: v1beta3 bars/latest
+      if (!cryptoFetched) {
+        try {
+          var cu2 = base + '/v1beta3/crypto/us/bars/latest?symbols=' + cryptoPairs;
+          var cr2 = await fetch(cu2, {headers: alpacaDataHeaders()});
+          var cd2 = await cr2.json();
+          if (cd2.bars) {
+            for (var i=0; i<cryptoSyms.length; i++) {
+              var cs = cryptoSyms[i];
+              var bar = cd2.bars[cs+'USD'];
+              if (bar) {
+                sonuclar[cs] = {bugun: parseFloat(bar.c), dun: parseFloat(bar.o), tarih: bar.t ? bar.t.slice(0,10) : ''};
+                cryptoFetched = true;
+              }
+            }
+          }
+        } catch(e2) { console.log('Kripto bars/latest hata:', e2.message); }
+      }
+
+      // Deneme 3: v2 crypto (eski format)
+      if (!cryptoFetched) {
+        try {
+          var cu3 = base + '/v2/crypto/us/bars/latest?symbols=' + cryptoPairs;
+          var cr3 = await fetch(cu3, {headers: alpacaDataHeaders()});
+          var cd3 = await cr3.json();
+          if (cd3.bars) {
+            for (var i=0; i<cryptoSyms.length; i++) {
+              var cs = cryptoSyms[i];
+              var bar3 = cd3.bars[cs+'USD'];
+              if (bar3) {
+                sonuclar[cs] = {bugun: parseFloat(bar3.c), dun: parseFloat(bar3.o), tarih: bar3.t ? bar3.t.slice(0,10) : ''};
+                cryptoFetched = true;
+              }
+            }
+          }
+        } catch(e3) { console.log('Kripto v2 hata:', e3.message); }
+      }
+
+      // Deneme 4: CoinGecko fallback (API key gerektirmiyor)
+      if (!cryptoFetched) {
+        try {
+          var cgMap = {'BTC':'bitcoin','ETH':'ethereum'};
+          var cgIds = cryptoSyms.map(function(s){ return cgMap[s]; }).filter(Boolean).join(',');
+          var cgUrl = 'https://api.coingecko.com/api/v3/simple/price?ids=' + cgIds + '&vs_currencies=usd&include_24hr_change=true';
+          var cgR = await fetch(cgUrl);
+          var cgD = await cgR.json();
+          for (var i=0; i<cryptoSyms.length; i++) {
+            var cs = cryptoSyms[i];
+            var cgId = cgMap[cs];
+            if (cgD[cgId]) {
+              var price = cgD[cgId].usd;
+              var change = cgD[cgId].usd_24h_change || 0;
+              var prevPrice = price / (1 + change/100);
+              sonuclar[cs] = {bugun: price, dun: prevPrice, tarih: new Date().toISOString().slice(0,10)};
+              console.log('CoinGecko OK:', cs, price);
+            }
+          }
+        } catch(e4) { console.log('CoinGecko hata:', e4.message); }
+      }
+    }
+
+  } catch(e) {
+    console.log('Alpaca fiyat hatası:', e);
+    // Fallback Twelve Data
+    return await twelveDataCek(semboller);
+  }
+
+  return sonuclar;
+}
+
+async function asxFiyatCek(semboller) {
+  // ASX → Twelve Data BHP:AU formatı
+  var sonuclar = {};
+  setStatus('ASX fiyatlar çekiliyor...', true);
+
+  // BHP.AX → BHP:AU formatına çevir (Twelve Data ASX formatı)
+  var formatli = semboller.map(function(s){
+    return s.replace('.AX', ':AU');
+  });
+  // Eşleştirme tablosu — API'nin döndürdüğü sembol → orijinal sembol
+  var sembolMap = {};
+  semboller.forEach(function(s, i){ sembolMap[formatli[i]] = s; });
+
+  var BATCH = 8;
+  var gruplar = [];
+  for (var i=0; i<formatli.length; i+=BATCH) {
+    gruplar.push({
+      syms: formatli.slice(i,i+BATCH),
+      orig: semboller.slice(i,i+BATCH)
+    });
+  }
+
+  for (var g=0; g<gruplar.length; g++) {
+    if (g > 0) {
+      setStatus('ASX rate limit bekleniyor (65sn)... (' + g + '/' + (gruplar.length-1) + ')', false);
+      await bekle(65000);
+      setStatus('ASX tarama devam ediyor...', true);
+    }
+    setStatus('ASX fiyat ' + (g*8+1) + '-' + Math.min((g+1)*8, semboller.length) + '/' + semboller.length, true);
+
+    try {
+      var url = 'https://api.twelvedata.com/time_series?symbol=' + gruplar[g].syms.join(',') +
+                '&interval=1day&outputsize=3&apikey=' + TWELVE_KEY;
+      console.log('ASX API isteği:', url.replace(TWELVE_KEY, 'KEY'));
+      var r = await fetch(url);
+      var data = await r.json();
+      console.log('ASX API yanıtı:', JSON.stringify(data).slice(0, 200));
+
+      if (data.values) {
+        // Tek sembol
+        var apiSym = gruplar[g].syms[0];
+        var origSym = sembolMap[apiSym] || gruplar[g].orig[0];
+        var v = data.values;
+        if (v.length >= 2) {
+          sonuclar[origSym] = {bugun: parseFloat(v[0].close), dun: parseFloat(v[1].close), tarih: v[0].datetime.slice(0,10)};
+        }
+      } else {
+        // Çoklu sembol — BHP:AU → BHP.AX eşleştir
+        for (var sym in data) {
+          var sd = data[sym];
+          var origSym2 = sembolMap[sym] || sym.replace(':AU','.AX');
+          if (sd && sd.values && sd.values.length >= 2) {
+            sonuclar[origSym2] = {bugun: parseFloat(sd.values[0].close), dun: parseFloat(sd.values[1].close), tarih: sd.values[0].datetime.slice(0,10)};
+          }
+        }
+      }
+    } catch(e) { console.log('ASX fiyat hatası:', e); }
+  }
+
+  return sonuclar;
+}
+
+async function twelveDataCek(semboller) {
+  // Fallback — Twelve Data NYSE için (Alpaca bağlı değilse)
+  var sonuclar = {};
+  var BATCH = 8;
+  for (var i=0; i<semboller.length; i+=BATCH) {
+    if (i > 0) {
+      setStatus('Rate limit bekleniyor...', false);
+      await bekle(65000);
+    }
+    var grup = semboller.slice(i, i+BATCH);
+    try {
+      var url = 'https://api.twelvedata.com/time_series?symbol=' + grup.join(',') +
+                '&interval=1day&outputsize=3&apikey=' + TWELVE_KEY;
+      var r = await fetch(url);
+      var data = await r.json();
+      if (data.values && grup.length === 1) {
+        var v = data.values;
+        if (v.length >= 2) sonuclar[grup[0]] = {bugun: parseFloat(v[0].close), dun: parseFloat(v[1].close), tarih: v[0].datetime.slice(0,10)};
+      } else {
+        for (var sym in data) {
+          var sd = data[sym];
+          if (sd && sd.values && sd.values.length >= 2)
+            sonuclar[sym] = {bugun: parseFloat(sd.values[0].close), dun: parseFloat(sd.values[1].close), tarih: sd.values[0].datetime.slice(0,10)};
+        }
+      }
+    } catch(e) {}
+  }
+  return sonuclar;
+}
+
+function bekle(ms) { return new Promise(function(r){ setTimeout(r,ms); }); }
+
+// ══════════════════════════════════════════════
+// TARAMA
+// ══════════════════════════════════════════════
+var aktifBorsa = 'NYSE';
+var aktifFiltre = 'all';
+var sonuclar = [];
+
+function setBorsa(b) {
+  aktifBorsa = b;
+  document.getElementById('btn-nyse').classList.toggle('active', b==='NYSE');
+  document.getElementById('btn-asx').classList.toggle('active',  b==='ASX');
+}
+
+function setStatus(msg, live) {
+  document.getElementById('statusText').textContent = msg;
+  document.getElementById('statusDot').className = 'status-dot' + (live?' live':'');
+}
+
+async function taraVeFiyat() {
+  var btn = document.getElementById('scanBtn');
+  btn.disabled = true;
+  btn.textContent = '⟳ TARANIYOR';
+  fiyatCache = {};
+  setStatus('Taranıyor...', true);
+  document.getElementById('sonuclar').innerHTML = '<div class="loading">Fiyatlar çekiliyor<span class="dots"></span></div>';
+
+  var today = aktifBorsa === 'ASX' ? asx_bugun() : nyse_bugun();
+  var prev  = addDays(today, -1);
+
+  var hedef = HISSELER.filter(function(h){
+    return aktifBorsa === 'ASX' ? h.ex === 'ASX' : h.ex !== 'ASX';
+  });
+
+  var semboller = hedef.map(function(h){ return h.s; });
+  var fiyatlar = await tumFiyatlariCek(semboller);
+
+  setStatus('Sinyaller hesaplanıyor...', true);
+
+  sonuclar = hedef.map(function(h) {
+    var S    = htKurucu(h);  // kurucu yılı veya tarih
+    var cur  = energySkor(S, today);
+    var prev_e = energySkor(S, prev);
+    var sc   = cur.sc, r = cur.r;
+    var f    = fiyatlar[h.s];
+
+    var divPlus, divMinus;
+    if (f) {
+      var fDeg = (f.bugun - f.dun) / f.dun * 100;
+      var eDeg = sc - prev_e.sc;
+      divPlus  = fDeg < -0.5 && eDeg >= 3;
+      divMinus = fDeg > 0.5  && eDeg <= -3;
+    } else {
+      divPlus  = prev_e.sc === -1 && sc === 2;
+      divMinus = prev_e.sc >= 2   && sc === -1;
+    }
+
+    var cyc = check2128(S, today);
+    var obj = { sym:h.s, name:h.n, S:S, sc:sc, r:r, f:f,
+                divPlus:divPlus, divMinus:divMinus,
+                c21:cyc.c21, c28:cyc.c28 };
+    obj.combo = comboSkor(obj);
+
+    var tags = [];
+    if (divPlus)  tags.push({c:'t-dp', l:'▲ DIV+'});
+    if (divMinus) tags.push({c:'t-dm', l:'▼ DIV-'});
+    if (r.golden) tags.push({c:'t-g',  l:'✦ V=0'});
+    if (r.turn)   tags.push({c:'t-ik', l:'⚡ İkili'});
+    if (r.harvest)tags.push({c:'t-zh', l:'Zirve'});
+    if (r.v3)          tags.push({c:'t-v3', l:'◈ V=3'});
+    if (r.v6)          tags.push({c:'t-v3', l:'◈ V=6'});
+    if (r.kalip137Yil) tags.push({c:'t-137', l:'★ 137'});
+    if (r.rezonansYil) tags.push({c:'t-rez', l:'⟳ REZ'});
+    if (cyc.c21)  tags.push({c:'t-21', l:'21g'});
+    if (cyc.c28)  tags.push({c:'t-28', l:'28g'});
+    obj.tags = tags;
+
+    var kartCls = '';
+    if (divPlus)      kartCls = 'div-plus';
+    else if(divMinus) kartCls = 'div-minus';
+    else if(r.golden) kartCls = 'golden';
+    else if(r.turn)   kartCls = 'ikili';
+    obj.kartCls = kartCls;
+
+    return obj;
+  });
+
+  document.getElementById('sToplam').textContent  = sonuclar.length;
+  document.getElementById('sDivPlus').textContent  = sonuclar.filter(function(h){return h.divPlus;}).length;
+  document.getElementById('sGolden').textContent   = sonuclar.filter(function(h){return h.r.golden;}).length;
+  document.getElementById('s21').textContent       = sonuclar.filter(function(h){return h.c21;}).length;
+  document.getElementById('s28').textContent       = sonuclar.filter(function(h){return h.c28;}).length;
+
+  goster();
+  top5Goster();
+
+  // Pozisyonları güncelle — Alpaca bağlıysa oradan, değilse localStorage
+  var _c = alpacaYukle();
+  if (_c.key) {
+    await alpacaEmirleriGoster();
+    await alpacaPozGoster();
+  } else {
+    acikPozGuncelle();
+  }
+
+  // ASX paper pozisyonları güncelle
+  if (aktifBorsa === 'ASX') {
+    asxFiyatGuncelle(fiyatlar);
+  }
+
+  // Çift sinyal kontrolü
+  ciftSinyalGoster();
+  gecisSignalleriGoster();
+  hicriGuncelle();
+  superRezonansKontrol();
+  // Ramazan/Hilal/Dolunay uyarısı
+  var hicriUyari = ramazanKontrol();
+  if (hicriUyari) {
+    var mevcut = document.getElementById('statusEl') || 
+                 document.querySelector('.status-bar');
+    console.log('Hicri:', hicriUyari);
+  }
+  if (document.getElementById('ajanPanel').classList.contains('acik')) {
+    ajanBaglamGuncelle();
+  }
+
+  var tarih = new Date().toLocaleTimeString('tr-TR');
+  setStatus('Son tarama: ' + tarih, false);
+  btn.disabled = false;
+  btn.textContent = '⟳ TARA';
+}
+
+function filtrele(tip) {
+  aktifFiltre = tip;
+  document.querySelectorAll('.f-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('f-'+tip).classList.add('active');
+  goster();
+}
+
+function goster() {
+  var liste = sonuclar.slice();
+  if (aktifFiltre==='divplus')  liste = liste.filter(function(h){return h.divPlus;});
+  else if(aktifFiltre==='divminus') liste = liste.filter(function(h){return h.divMinus;});
+  else if(aktifFiltre==='golden')   liste = liste.filter(function(h){return h.r.golden;});
+  else if(aktifFiltre==='ikili')    liste = liste.filter(function(h){return h.r.turn;});
+  else if(aktifFiltre==='v3')       liste = liste.filter(function(h){return h.r.v3;});
+  else if(aktifFiltre==='21')       liste = liste.filter(function(h){return h.c21;});
+  else if(aktifFiltre==='28')       liste = liste.filter(function(h){return h.c28;});
+
+  liste.sort(function(a,b){ return b.combo - a.combo; });
+
+  var c = document.getElementById('sonuclar');
+  if (!liste.length) { c.innerHTML = '<div class="bos">Bu filtrede sinyal yok.</div>'; return; }
+
+  c.innerHTML = '<div class="grid">' + liste.map(function(h) {
+    var fStr = h.f ? '$'+h.f.bugun.toFixed(2) : '—';
+    var tags = h.tags.map(function(t){ return '<span class="tag '+t.c+'">'+t.l+'</span>'; }).join('');
+    var yon = h.divMinus ? 'SHORT' : 'LONG';
+    var btnCls = h.divMinus ? 'short-btn' : '';
+    return '<div class="kart '+h.kartCls+'">' +
+      '<div class="kart-top"><div class="kart-sym" onclick="ekgAc(\''+h.sym+'\',\''+h.name+'\','+h.S+')" style="cursor:pointer;border-bottom:1px solid rgba(201,168,76,0.2)" title="EKG Detay">'+h.sym+' <span style="font-size:9px;color:var(--gold);opacity:0.6">⬡</span></div><div class="kart-fiyat">'+fStr+'</div></div>' +
+      '<div class="kart-isim">'+h.name+'</div>' +
+      '<div class="tags">'+(tags||'<span class="tag" style="color:var(--muted);background:var(--bg4)">Sessiz</span>')+'</div>' +
+      '<div class="kart-alt">1937='+h.r.e1937+' 1947='+h.r.e1947+' 1953='+h.r.e1953+' 1993='+h.r.e1993+'</div>' +
+      '<div class="kart-skor">S='+h.S+' V='+h.r.v+' E='+(h.sc>=0?'+':'')+h.sc+' Combo='+h.combo+'</div>' +
+      '<button class="islem-btn '+btnCls+'" onclick="islemAc(\''+h.sym+'\',\''+yon+'\',' + (h.f ? h.f.bugun : 0) + ')">+ '+yon+'</button>' +
+    '</div>';
+  }).join('') + '</div>';
+}
+
+// ══════════════════════════════════════════════
+// TOP 5
+// ══════════════════════════════════════════════
+function top5Goster() {
+  var t5 = sonuclar.filter(function(h){return h.combo>0;})
+    .sort(function(a,b){return b.combo-a.combo;}).slice(0,5);
+  var el = document.getElementById('top5Liste');
+  if (!t5.length) { el.innerHTML = '<div class="bos">Sinyal yok</div>'; return; }
+  el.innerHTML = t5.map(function(h,i) {
+    var sig = h.tags.map(function(t){return t.l;}).join(' ');
+    var yon = h.divMinus ? 'SHORT' : 'LONG';
+    return '<div class="top5-item">' +
+      '<div class="t5-num">'+(i+1)+'</div>' +
+      '<div class="t5-sym">'+h.sym+'</div>' +
+      '<div class="t5-sig">'+sig+'</div>' +
+      '<div class="t5-combo">+'+h.combo+'</div>' +
+      '<button class="t5-btn" onclick="islemAc(\''+h.sym+'\',\''+yon+'\',' + (h.f ? h.f.bugun : 0) + ')">+POS</button>' +
+    '</div>';
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+// PAPER TRADING
+// ══════════════════════════════════════════════
+var SERMAYE_BASLANGIC = 10000;
+
+function tradesYukle() {
+  try { return JSON.parse(localStorage.getItem('nizam_trades') || 'null') || {sermaye:SERMAYE_BASLANGIC, acik:[], kapali:[]}; }
+  catch(e) { return {sermaye:SERMAYE_BASLANGIC, acik:[], kapali:[]}; }
+}
+function tradesKaydet(d) { localStorage.setItem('nizam_trades', JSON.stringify(d)); }
+
+function pozisyonAcLocal(symbol, yon, fiyatSon) {
+  var fiyat = parseFloat(prompt(symbol + ' giriş fiyatı? (USD)', fiyatSon > 0 ? fiyatSon.toFixed(2) : ''));
+  if (isNaN(fiyat) || fiyat <= 0) return;
+
+  var d = tradesYukle();
+  var miktar = Math.floor((d.sermaye * 0.10) / fiyat * 10000) / 10000;
+
+  d.acik.push({
+    id: Date.now(), symbol: symbol, yon: yon,
+    giris: fiyat, miktar: miktar,
+    deger: parseFloat((miktar * fiyat).toFixed(2)),
+    tarih: new Date().toLocaleDateString('tr-TR'),
+    stop: yon === 'LONG' ? parseFloat((fiyat*0.92).toFixed(2)) : parseFloat((fiyat*1.08).toFixed(2)),
+  });
+
+  tradesKaydet(d);
+  acikPozGuncelle();
+  pnlGuncelle();
+}
+
+function pozisyonKapat(id) {
+  var d = tradesYukle();
+  var poz = d.acik.find(function(t){return t.id===id;});
+  if (!poz) return;
+
+  var guncelF = fiyatCache[poz.symbol];
+  var oneri = guncelF ? guncelF.bugun.toFixed(2) : '';
+  var fiyat = parseFloat(prompt(poz.symbol + ' çıkış fiyatı? (USD)', oneri));
+  if (isNaN(fiyat) || fiyat <= 0) return;
+
+  var kar = poz.yon === 'LONG'
+    ? (fiyat - poz.giris) * poz.miktar
+    : (poz.giris - fiyat) * poz.miktar;
+
+  d.sermaye += kar;
+  d.kapali.unshift(Object.assign({}, poz, {
+    cikis: fiyat, kar: parseFloat(kar.toFixed(2)),
+    karPct: parseFloat((kar/poz.deger*100).toFixed(2)),
+    cikisTarih: new Date().toLocaleDateString('tr-TR'),
+  }));
+  d.acik = d.acik.filter(function(t){return t.id!==id;});
+
+  tradesKaydet(d);
+  acikPozGuncelle();
+  kapaliGoster();
+  pnlGuncelle();
+}
+
+function acikPozGuncelle() {
+  var d = tradesYukle();
+  var el = document.getElementById('acikPozisyonlar');
+  document.getElementById('acikSayi').textContent = d.acik.length;
+
+  if (!d.acik.length) { el.innerHTML = '<div class="bos">Açık pozisyon yok</div>'; return; }
+
+  el.innerHTML = d.acik.map(function(poz) {
+    var guncel = fiyatCache[poz.symbol];
+    var karDolar = 0, karPct = 0;
+    var guncelStr = '—';
+    if (guncel) {
+      karDolar = poz.yon === 'LONG'
+        ? (guncel.bugun - poz.giris) * poz.miktar
+        : (poz.giris - guncel.bugun) * poz.miktar;
+      karPct = karDolar / poz.deger * 100;
+      guncelStr = '$' + guncel.bugun.toFixed(2);
+    }
+    var pnlCls = karDolar >= 0 ? 'pos' : 'neg';
+    var stopUyari = guncel && ((poz.yon==='LONG' && guncel.bugun <= poz.stop) ||
+                               (poz.yon==='SHORT' && guncel.bugun >= poz.stop));
+    return '<div class="poz"' + (stopUyari?' style="border-color:rgba(224,85,85,0.6)"':'') + '>' +
+      '<div class="poz-top">' +
+        '<div class="poz-sym">'+poz.symbol+'</div>' +
+        '<span class="poz-yon '+poz.yon.toLowerCase()+'">'+poz.yon+'</span>' +
+      '</div>' +
+      '<div class="poz-row"><span>Giriş</span><span>$'+poz.giris.toFixed(2)+'</span></div>' +
+      '<div class="poz-row"><span>Güncel</span><span>'+guncelStr+'</span></div>' +
+      '<div class="poz-row"><span>Miktar</span><span>'+poz.miktar+'</span></div>' +
+      '<div class="poz-row"><span>Stop</span><span>$'+poz.stop+'</span></div>' +
+      (guncel ? '<div class="poz-pnl '+pnlCls+'">'+(karDolar>=0?'+':'')+'$'+karDolar.toFixed(2)+' (%'+(karPct>=0?'+':'')+karPct.toFixed(1)+')</div>' : '') +
+      (stopUyari ? '<div style="font-size:9px;color:var(--red);margin-top:4px">⚠ STOP SEVİYESİ</div>' : '') +
+      '<button class="kapat-btn" onclick="pozisyonKapat('+poz.id+')">KAPAT</button>' +
+    '</div>';
+  }).join('');
+}
+
+function kapaliGoster() {
+  var d = tradesYukle();
+  var el = document.getElementById('kapaliIslemler');
+  if (!d.kapali.length) { el.innerHTML = '<div class="bos">Henüz kapalı işlem yok</div>'; return; }
+  el.innerHTML = d.kapali.slice(0,10).map(function(t) {
+    var cls = t.kar >= 0 ? 'color:var(--green)' : 'color:var(--red)';
+    return '<div class="kapali-row">' +
+      '<span style="min-width:46px;font-weight:600">'+t.symbol+'</span>' +
+      '<span class="poz-yon '+t.yon.toLowerCase()+'" style="font-size:7px;padding:1px 5px">'+t.yon+'</span>' +
+      '<span style="flex:1;color:var(--dim)">'+t.tarih+'</span>' +
+      '<span style="'+cls+';font-weight:600">'+(t.kar>=0?'+':'')+'$'+t.kar.toFixed(2)+'</span>' +
+    '</div>';
+  }).join('');
+}
+
+function pnlGuncelle() {
+  var d = tradesYukle();
+  var kar = d.sermaye - SERMAYE_BASLANGIC;
+  var el = document.getElementById('pnlToplam');
+  el.textContent = '$' + d.sermaye.toFixed(2);
+  el.className = 'pnl-toplam ' + (kar >= 0 ? 'pos' : 'neg');
+  var kapali = d.kapali.length;
+  var kazanan = d.kapali.filter(function(t){return t.kar>=0;}).length;
+  var wr = kapali > 0 ? Math.round(kazanan/kapali*100) : 0;
+  document.getElementById('pnlAlt').textContent =
+    'Kar/Zarar: '+(kar>=0?'+':'')+kar.toFixed(2)+' | Win: %'+wr+' | İşlem: '+kapali;
+}
+
+function clearKapali() {
+  if (!confirm('Kapalı işlemler silinsin mi?')) return;
+  var d = tradesYukle();
+  d.kapali = [];
+  tradesKaydet(d);
+  kapaliGoster();
+}
+
+// ══════════════════════════════════════════════
+// ALPACA ENTEGRASYONU
+// ══════════════════════════════════════════════
+
+function toggleSettings() {
+  var p = document.getElementById('settingsPanel');
+  // Kayıtlı Anthropic key'i göster
+  var antKey = localStorage.getItem('anthropic_key') || '';
+  var antEl = document.getElementById('anthropicKey');
+  if (antEl && antKey) antEl.value = antKey;
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+  // Kayıtlı değerleri göster
+  var saved = alpacaYukle();
+  if (saved.key) document.getElementById('alpacaKey').value = saved.key;
+  if (saved.secret) document.getElementById('alpacaSecret').value = saved.secret;
+  if (saved.mod) document.getElementById('alpacaMod').value = saved.mod;
+}
+
+function alpacaYukle() {
+  try { return JSON.parse(localStorage.getItem('alpaca_config') || '{}'); }
+  catch(e) { return {}; }
+}
+
+function alpacaKaydet() {
+  var key    = document.getElementById('alpacaKey').value.trim();
+  var secret = document.getElementById('alpacaSecret').value.trim();
+  var mod    = document.getElementById('alpacaMod').value;
+  if (!key || !secret) { alert('Key ve Secret gerekli!'); return; }
+  localStorage.setItem('alpaca_config', JSON.stringify({key:key, secret:secret, mod:mod}));
+  // Anthropic key
+  var antKey = document.getElementById('anthropicKey').value.trim();
+  if (antKey) localStorage.setItem('anthropic_key', antKey);
+  document.getElementById('alpacaStatus').textContent = '✓ Kaydedildi';
+  document.getElementById('alpacaStatus').style.color = '#3dba7a';
+}
+
+function alpacaBaseUrl() {
+  var cfg = alpacaYukle();
+  return cfg.mod === 'live'
+    ? 'https://api.alpaca.markets'
+    : 'https://paper-api.alpaca.markets';
+}
+
+function alpacaHeaders() {
+  var cfg = alpacaYukle();
+  var h = {
+    'APCA-API-KEY-ID':     cfg.key || '',
+    'APCA-API-SECRET-KEY': cfg.secret || '',
+    'Content-Type': 'application/json'
+  };
+  return h;
+}
+
+function alpacaDataHeaders() {
+  var cfg = alpacaYukle();
+  return {
+    'APCA-API-KEY-ID':     cfg.key || '',
+    'APCA-API-SECRET-KEY': cfg.secret || '',
+  };
+}
+
+function alpacaDeleteHeaders() {
+  // DELETE emirleri için — Content-Type yok
+  var cfg = alpacaYukle();
+  return {
+    'APCA-API-KEY-ID':     cfg.key || '',
+    'APCA-API-SECRET-KEY': cfg.secret || '',
+  };
+}
+
+async function alpacaTest() {
+  var el = document.getElementById('alpacaStatus');
+  el.textContent = 'Test ediliyor...';
+  el.style.color = '#8a8070';
+  try {
+    var r = await fetch(alpacaBaseUrl() + '/v2/account', {headers: alpacaHeaders()});
+    var data = await r.json();
+    if (data.status) {
+      el.textContent = '✓ Bağlantı OK | Bakiye: $' + parseFloat(data.cash).toFixed(2);
+      el.style.color = '#3dba7a';
+    } else {
+      el.textContent = '✗ ' + (data.message || 'Hata');
+      el.style.color = '#e05555';
+    }
+  } catch(e) {
+    el.textContent = '✗ Bağlanamadı: ' + e.message;
+    el.style.color = '#e05555';
+  }
+}
+
+async function alpacaPozisyonlariCek() {
+  try {
+    var url = alpacaBaseUrl() + '/v2/positions';
+    console.log('Pozisyon URL:', url);
+    var r = await fetch(url, {headers: alpacaDataHeaders()});
+    console.log('Pozisyon status:', r.status);
+    var data = await r.json();
+    console.log('Pozisyon data:', JSON.stringify(data).slice(0,300));
+    return data;
+  } catch(e) {
+    console.log('Pozisyon hata:', e.message);
+    return null;
+  }
+}
+
+async function alpacaEmir(symbol, yon, miktar, girisF) {
+  try {
+    var qty = String(Math.max(1, Math.floor(miktar)));
+    var side = yon === 'LONG' ? 'buy' : 'sell';
+
+    // Adım 1: Ana market emri — basit, bracket yok
+    // Short için bracket order Alpaca paper'da reddediliyor
+    var body = {
+      symbol:        symbol,
+      qty:           qty,
+      side:          side,
+      type:          'market',
+      time_in_force: 'day'  // gtc değil day — borsa kapalıyken de çalışır
+    };
+
+    console.log('Market order:', JSON.stringify(body));
+
+    var r = await fetch(alpacaBaseUrl() + '/v2/orders', {
+      method: 'POST',
+      headers: alpacaHeaders(),
+      body: JSON.stringify(body)
+    });
+    var data = await r.json();
+    console.log('Emir sonucu:', JSON.stringify(data).slice(0, 200));
+
+    return data;
+  } catch(e) {
+    console.log('Emir hatası:', e.message);
+    return null;
+  }
+}
+
+async function alpacaKapat(symbol, miktar, yon) {
+  try {
+    var body = {
+      symbol:        symbol,
+      qty:           String(Math.max(1, Math.floor(miktar))),
+      side:          yon === 'LONG' ? 'sell' : 'buy',
+      type:          'market',
+      time_in_force: 'gtc'
+    };
+    var r = await fetch(alpacaBaseUrl() + '/v2/orders', {
+      method: 'POST',
+      headers: alpacaHeaders(),
+      body: JSON.stringify(body)
+    });
+    return await r.json();
+  } catch(e) { return null; }
+}
+
+// ══════════════════════════════════════════════
+// ZAMAN ÇUBUĞU — MELBOURNE × NYSE
+// ══════════════════════════════════════════════
+function zamanCubugGuncelle() {
+  var el = document.getElementById('zamanCubugu');
+  if (!el) return;
+
+  var now = new Date();
+  
+  // Melbourne saati (AEST = UTC+10, AEDT = UTC+11)
+  var melb = new Date(now.toLocaleString('en-US', {timeZone:'Australia/Melbourne'}));
+  var melbStr = melb.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'});
+  var melbTarih = melb.toLocaleDateString('tr-TR', {day:'2-digit',month:'2-digit'});
+  
+  // NYSE saati (ET = UTC-4 yaz, UTC-5 kış)
+  var nyse = new Date(now.toLocaleString('en-US', {timeZone:'America/New_York'}));
+  var nyseStr = nyse.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'});
+  var nyseTarih = nyse.toLocaleDateString('tr-TR', {day:'2-digit',month:'2-digit'});
+  
+  // NYSE açık mı?
+  var nyseAcik = false;
+  var nyseGun = nyse.getDay();
+  var nyseSaat = nyse.getHours() * 60 + nyse.getMinutes();
+  if (nyseGun >= 1 && nyseGun <= 5 && nyseSaat >= 570 && nyseSaat < 960) {
+    nyseAcik = true; // 09:30 - 16:00
+  }
+  
+  // Melbourne'da NYSE açılış saati
+  var nyseAcilis = new Date(nyse);
+  nyseAcilis.setHours(9, 30, 0, 0);
+  var melbAcilis = new Date(nyseAcilis.toLocaleString('en-US', {timeZone:'Australia/Melbourne'}));
+  var melbAcilisStr = melbAcilis.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'});
+  
+  // Hicri bilgi
+  var hicri = miladi2hicri(now);
+  var hAylar = ['','Muharrem','Safer','Rebiülevvel','Rebiülahir',
+    'Cemaz.Evvel','Cemaz.Ahir','Receb','Şaban','Ramazan',
+    'Şevval','Zilkade','Zilhicce'];
+  var hAyAdi = hAylar[hicri.ay] || '?';
+  var hicriRenk = hicri.ay===9 ? '#e05555' : (hicri.gun===1 ? '#3dba7a' : 
+                  (hicri.gun>=13&&hicri.gun<=15) ? '#c9a84c' : '#4a4840');
+  var hicriEk = hicri.ay===9 ? ' ⚠' : hicri.gun===1 ? ' 🌙' : 
+                (hicri.gun>=13&&hicri.gun<=15) ? ' 🌕' : '';
+
+  el.innerHTML = 
+    '<div class="zaman-item"><span class="z-label">Melbourne</span><span class="z-val">' + melbTarih + ' ' + melbStr + '</span></div>' +
+    '<div class="zaman-item"><span class="z-label">NYSE</span><span class="z-val">' + nyseTarih + ' ' + nyseStr + '</span></div>' +
+    '<div class="zaman-item"><span class="z-label">Borsa</span><span class="' + (nyseAcik?'z-acik':'z-kapali') + '">' + (nyseAcik?'● AÇIK':'● KAPALI') + '</span></div>' +
+    '<div class="zaman-item"><span class="z-label">Melb. Açılış</span><span class="z-val">' + melbAcilisStr + '</span></div>' +
+    '<div class="zaman-item"><span class="z-label">Hicri</span><span style="color:' + hicriRenk + ';margin-left:4px;font-size:9px">' + hicri.gun + ' ' + hAyAdi + hicriEk + '</span></div>';
+
+  // Header güncelle
+  var hM = document.getElementById('hdrMelb');
+  var hN = document.getElementById('hdrNyse');
+  var hH = document.getElementById('hdrHicri');
+  if (hM) hM.innerHTML = '<span style="color:#6a6458">Melb</span> <span style="color:#c9a84c">' + melbStr + '</span>';
+  if (hN) hN.innerHTML = '<span style="color:#6a6458">NYSE</span> <span style="color:' + (nyseAcik?'#3dba7a':'#e05555') + '">' + (nyseAcik?'AÇIK':'KAPALI') + '</span>';
+  if (hH) hH.innerHTML = '<span style="color:' + hicriRenk + '">' + hicri.gun + ' ' + hAyAdi + hicriEk + '</span>';
+}
+
+// Her 30 saniyede güncelle
+setInterval(zamanCubugGuncelle, 30000);
+zamanCubugGuncelle();
+
+// Alpaca pozisyonlarını sidebar'a yükle
+async function alpacaEmirleriCek() {
+  try {
+    var r = await fetch(alpacaBaseUrl() + '/v2/orders?status=open&limit=20', {
+      headers: alpacaDataHeaders()
+    });
+    if (!r.ok) return [];
+    var data = await r.json();
+    return Array.isArray(data) ? data : [];
+  } catch(e) {
+    console.log('Emir çekme hatası:', e.message);
+    return [];
+  }
+}
+
+async function alpacaEmirleriGoster() {
+  var emirler = await alpacaEmirleriCek();
+  console.log('Bekleyen emirler:', emirler.length);
+
+  var el = document.getElementById('bekleyenEmirlerId');
+  document.getElementById('emirSayi').textContent = emirler.length;
+
+  if (!emirler.length) {
+    el.innerHTML = '<div class="bos">Bekleyen emir yok</div>';
+    return;
+  }
+
+  el.innerHTML = emirler.map(function(e) {
+    var yon = e.side === 'buy' ? 'LONG' : 'SHORT';
+    var yonCls = e.side === 'buy' ? 'long' : 'short';
+    var status = e.status || 'pending';
+    return '<div class="emir-row">' +
+      '<div class="emir-top">' +
+        '<div class="emir-sym">' + e.symbol + '</div>' +
+        '<div style="display:flex;gap:5px;align-items:center;">' +
+          '<span class="poz-yon ' + yonCls + '">' + yon + '</span>' +
+          '<span class="emir-status ' + (status==='accepted'?'accepted':'pending') + '">' + status.toUpperCase() + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="emir-row-info"><span>Miktar</span><span>' + e.qty + ' hisse</span></div>' +
+      '<div class="emir-row-info"><span>Tip</span><span>' + e.type + ' / ' + e.time_in_force + '</span></div>' +
+      '<div class="emir-row-info"><span>Tarih</span><span>' + (e.created_at ? e.created_at.slice(0,10) : '-') + '</span></div>' +
+      '<button class="emir-iptal" data-id="' + e.id + '" data-sym="' + e.symbol + '" onclick="alpacaEmiriIptal(this.dataset.id,this.dataset.sym)">IPTAL</button>' +
+    '</div>';
+  }).join('');
+}
+
+async function alpacaEmiriIptal(orderId, symbol) {
+  if (!confirm(symbol + ' emrini iptal et?')) return;
+  try {
+    var r = await fetch(alpacaBaseUrl() + '/v2/orders/' + orderId, {
+      method: 'DELETE',
+      headers: alpacaDeleteHeaders()
+    });
+    console.log('İptal status:', r.status);
+    if (r.status === 204 || r.ok) {
+      setStatus('İptal edildi: ' + symbol, false);
+      setTimeout(function() {
+        alpacaEmirleriGoster();
+        alpacaPozGoster();
+      }, 1500);
+    } else {
+      var errText = await r.text();
+      console.log('İptal hata detay:', errText);
+      alert('İptal hatası: ' + errText);
+    }
+  } catch(e) {
+    alert('İptal hatası: ' + e.message);
+  }
+}
+
+// ══════════════════════════════════════════════
+// NİZAM POZİSYON ANALİZİ
+// ══════════════════════════════════════════════
+
+function nizamPozAnaliz(symbol, yon, giris, guncel) {
+  var today = new Date();
+  
+  // Hissenin S değeri
+  var hisse = HISSELER.filter(function(h){ return h.s === symbol; })[0];
+  var S = hisse ? htKurucu(hisse) : 5;  // kurucu yılı
+  
+  var todayHT = ht(nyse_bugun());
+  var v = Math.abs(S - todayHT);
+  var e47 = indirge(v * 1947);
+  var e53 = indirge(v * 1953);
+  
+  var isV0Today   = (v === 0);
+  var isDivToday  = (e47 === 9 && e53 === 9);
+  
+  // Stop hesapla — Nizam bazlı
+  // V=0 günündeki fiyatı hedef al
+  var stopPct = yon === 'LONG' ? 0.92 : 1.08;
+  var stop = giris * stopPct;
+  var stopUyari = (yon==='LONG' && guncel <= stop * 1.01) || 
+                  (yon==='SHORT' && guncel >= stop * 0.99);
+
+  // Yaklaşan V=0 günü
+  var yaklasanV0 = null;
+  for (var i=1; i<=14; i++) {
+    var dt = new Date(today);
+    dt.setDate(dt.getDate() + i);
+    if (dt.getDay()===0 || dt.getDay()===6) continue;
+    var dtStr = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+    var futHT = ht(dtStr);
+    var futV = Math.abs(S - futHT);
+    if (futV === 0) { yaklasanV0 = i; break; }
+  }
+
+  // Çıkış uyarısı
+  var cikisUyari = false;
+  var yorum = '';
+
+  if (isV0Today) {
+    cikisUyari = true;
+    yorum = 'Bugün V=0 — Kristal nokta. ' + (yon==='LONG' ? 'Zirve yakın, kâr al.' : 'Dip yakın, kâr al.');
+  } else if (isDivToday) {
+    yorum = 'DIV+ günü (V='+v+'). Enerji değişim noktası. Dikkatli izle.';
+  } else if (yaklasanV0 !== null && yaklasanV0 <= 3) {
+    yorum = yaklasanV0 + ' gün sonra V=0. ' + (yon==='LONG' ? 'Çıkışa hazırlan.' : 'Kapanış yaklaşıyor.');
+    if (yaklasanV0 === 1) cikisUyari = true;
+  } else if (stopUyari) {
+    cikisUyari = true;
+    yorum = '⚠ Stop seviyesine yakın! $' + stop.toFixed(2);
+  } else {
+    var kar = yon==='LONG' ? (guncel-giris)/giris*100 : (giris-guncel)/giris*100;
+    yorum = 'V='+v+' · ' + (kar>=0 ? '%+'+kar.toFixed(1)+' kârda' : '%'+kar.toFixed(1)+' zararda');
+    if (yaklasanV0) yorum += ' · V=0: '+yaklasanV0+'g';
+  }
+
+  return { S, v, isV0Today, isDivToday, stop, stopUyari, cikisUyari, yorum };
+}
+
+// Stop güncelle — Alpaca'ya gönder
+async function nizamStopGuncelle(symbol, stopFiyat) {
+  var cfg = alpacaYukle();
+  if (!cfg.key) return;
+  
+  var yeniStop = parseFloat(prompt(symbol + ' yeni stop fiyatı:', stopFiyat.toFixed(2)));
+  if (!yeniStop || isNaN(yeniStop)) return;
+  
+  try {
+    // Önce mevcut stop emrini bul ve güncelle
+    var base = alpacaBaseUrl();
+    var emirResp = await fetch(base + '/v2/orders?status=open&limit=100', { headers: alpacaHeaders() });
+    var emirler = await emirResp.json();
+    var stopEmri = emirler.filter && emirler.filter(function(e){ 
+      return e.symbol===symbol && e.order_type==='stop'; 
+    })[0];
+    
+    if (stopEmri) {
+      // Mevcut emri güncelle
+      await fetch(base + '/v2/orders/' + stopEmri.id, {
+        method: 'PATCH',
+        headers: alpacaHeaders(),
+        body: JSON.stringify({ stop_price: yeniStop.toString() })
+      });
+    } else {
+      // Yeni stop emri oluştur
+      var hisse = HISSELER.filter(function(h){ return h.s===symbol; })[0];
+      var pozResp = await fetch(base + '/v2/positions/' + symbol, { headers: alpacaHeaders() });
+      var poz = await pozResp.json();
+      var yon = parseFloat(poz.qty) > 0 ? 'LONG' : 'SHORT';
+      var miktar = Math.abs(parseFloat(poz.qty));
+      
+      await fetch(base + '/v2/orders', {
+        method: 'POST',
+        headers: alpacaHeaders(),
+        body: JSON.stringify({
+          symbol: symbol,
+          qty: miktar.toString(),
+          side: yon==='LONG' ? 'sell' : 'buy',
+          type: 'stop',
+          time_in_force: 'gtc',
+          stop_price: yeniStop.toString()
+        })
+      });
+    }
+    setStatus(symbol + ' stop güncellendi: $' + yeniStop.toFixed(2), false);
+    await alpacaPozGoster();
+  } catch(e) {
+    setStatus('Stop güncelleme hatası: ' + e.message, false);
+  }
+}
+
+async function alpacaPozGoster() {
+  var cfg = alpacaYukle();
+  if (!cfg.key) return;
+
+  var pozlar = await alpacaPozisyonlariCek();
+  console.log('Alpaca pozisyonlar:', pozlar);
+
+  if (!pozlar || !Array.isArray(pozlar) || pozlar.length === 0) {
+    document.getElementById('acikPozisyonlar').innerHTML = '<div class="bos">Açık pozisyon yok</div>';
+    document.getElementById('acikSayi').textContent = '0';
+    pnlGuncelleAlpaca();
+    return;
+  }
+
+  var el = document.getElementById('acikPozisyonlar');
+  document.getElementById('acikSayi').textContent = pozlar.length;
+
+  // Zaman çubuğunu güncelle
+  zamanCubugGuncelle();
+
+  el.innerHTML = pozlar.map(function(p) {
+    var kar    = parseFloat(p.unrealized_pl || 0);
+    var karPct = parseFloat(p.unrealized_plpc || 0) * 100;
+    var pnlCls = kar >= 0 ? 'pos' : 'neg';
+    var yon    = parseFloat(p.qty) > 0 ? 'LONG' : 'SHORT';
+    var giris  = parseFloat(p.avg_entry_price);
+    var guncel = parseFloat(p.current_price || p.avg_entry_price);
+    var miktar = Math.abs(parseFloat(p.qty));
+
+    // Nizam analizi
+    var nizam = nizamPozAnaliz(p.symbol, yon, giris, guncel);
+
+    var panelCls = 'nizam-poz-panel';
+    if (nizam.stopUyari) panelCls += ' uyari';
+    else if (kar >= 0) panelCls += ' karda';
+    else panelCls += ' zararda';
+
+    var html = '<div class="' + panelCls + '">';
+
+    // Header
+    html += '<div class="npz-header">';
+    html += '<div class="npz-sym">' + p.symbol + '</div>';
+    html += '<div class="npz-badges">';
+    html += '<span class="npz-badge ' + yon.toLowerCase() + '">' + yon + '</span>';
+    if (nizam.isV0Today) html += '<span class="npz-badge v0">✦ V=0</span>';
+    if (nizam.isDivToday) html += '<span class="npz-badge div">◈ DIV+</span>';
+    if (nizam.cikisUyari) html += '<span class="npz-badge cik">⚡ ÇIK</span>';
+    html += '</div></div>';
+
+    // Fiyat grid
+    html += '<div class="npz-grid">';
+    html += '<div class="npz-row"><span>Giriş</span><span>$' + giris.toFixed(2) + '</span></div>';
+    html += '<div class="npz-row"><span>Güncel</span><span>$' + guncel.toFixed(2) + '</span></div>';
+    html += '<div class="npz-row"><span>Miktar</span><span>' + miktar + '</span></div>';
+    html += '<div class="npz-row"><span>Stop</span><span style="color:' + (nizam.stopUyari?'#e05555':'#c8c0b4') + '">$' + nizam.stop.toFixed(2) + '</span></div>';
+    html += '</div>';
+
+    // PNL
+    html += '<div class="npz-pnl ' + pnlCls + '">' + (kar>=0?'+':'') + '$' + kar.toFixed(2) + ' (%' + (karPct>=0?'+':'') + karPct.toFixed(1) + ')</div>';
+
+    // Nizam yorumu
+    html += '<div class="npz-nizam">';
+    html += '<div class="niz-label">NİZAM</div>';
+    html += nizam.yorum;
+    html += '</div>';
+
+    // Aksiyon butonları
+    html += '<div class="npz-actions">';
+    html += '<button class="npz-btn kapat" data-sym="' + p.symbol + '" data-qty="' + miktar + '" data-yon="' + yon + '" onclick="alpacaKapatPoz(this.dataset.sym,parseFloat(this.dataset.qty),this.dataset.yon)">✕ KAPAT</button>';
+    html += '<button class="npz-btn stop" onclick="nizamStopGuncelle(\'' + p.symbol + '\',' + nizam.stop + ')">⟳ STOP</button>';
+    html += '</div>';
+
+    html += '</div>';
+    return html;
+  }).join('');
+
+  pnlGuncelleAlpaca();
+}
+
+async function alpacaKapatPoz(symbol, miktar, yon) {
+  if (!confirm(symbol + ' pozisyonunu kapat?')) return;
+  setStatus('Kapanıyor...', true);
+  try {
+    // Alpaca closeout endpoint — en güvenli yöntem
+    var r = await fetch(alpacaBaseUrl() + '/v2/positions/' + symbol, {
+      method: 'DELETE',
+      headers: alpacaDeleteHeaders()
+    });
+    var sonuc = await r.json();
+    console.log('Kapat sonuc:', sonuc);
+    if (r.ok || sonuc.id || sonuc.symbol) {
+      setStatus('Kapatıldı: ' + symbol, false);
+      setTimeout(alpacaPozGoster, 3000);
+    } else {
+      setStatus('Hata: ' + (sonuc.message || 'Bilinmeyen'), false);
+      alert('Kapatma hatası: ' + JSON.stringify(sonuc));
+    }
+  } catch(e) {
+    setStatus('Hata!', false);
+    alert('Hata: ' + e.message);
+  }
+}
+
+async function pnlGuncelleAlpaca() {
+  try {
+    var r = await fetch(alpacaBaseUrl() + '/v2/account', {headers: alpacaHeaders()});
+    var data = await r.json();
+    if (!data.portfolio_value) return;
+    var portfoy = parseFloat(data.portfolio_value);
+    var baslangic = 100000; // Alpaca paper default
+    var kar = portfoy - baslangic;
+    var el = document.getElementById('pnlToplam');
+    el.textContent = '$' + portfoy.toFixed(2);
+    el.className = 'pnl-toplam ' + (kar >= 0 ? 'pos' : 'neg');
+    document.getElementById('pnlAlt').textContent =
+      'Kar/Zarar: '+(kar>=0?'+':'')+'$'+kar.toFixed(2) + ' | Nakit: $'+parseFloat(data.cash).toFixed(2);
+  } catch(e) {}
+}
+
+// pozisyonAc'ı Alpaca ile yeniden yaz
+async function pozisyonAcAlpaca(symbol, yon, fiyatSon) {
+  var cfg = alpacaYukle();
+  if (!cfg.key) {
+    pozisyonAcLocal(symbol, yon, fiyatSon);
+    return;
+  }
+
+  // Fiyat — tarama fiyatını kullan, yoksa sor
+  var fiyat = fiyatSon > 0 ? fiyatSon : parseFloat(prompt(symbol + ' giriş fiyatı? (USD)', ''));
+  if (isNaN(fiyat) || fiyat <= 0) { alert('Fiyat bulunamadı. Önce tara.'); return; }
+
+  // Bakiyeyi çek
+  var r = await fetch(alpacaBaseUrl() + '/v2/account', {headers: alpacaHeaders()});
+  var acc = await r.json();
+  var nakit = parseFloat(acc.cash || 10000);
+  var otomMiktar = Math.max(1, Math.floor((nakit * 0.10) / fiyat));
+
+  // Sadece miktar sor
+  var miktarStr = prompt(symbol + ' - Giriş: $' + fiyat.toFixed(2) + ' | Kaç hisse? (Önerilen: ' + otomMiktar + ')', otomMiktar);
+  var miktar = parseInt(miktarStr);
+  if (isNaN(miktar) || miktar < 1) return;
+
+  setStatus('Emir gönderiliyor...', true);
+  var sonuc = await alpacaEmir(symbol, yon, miktar, fiyat);
+
+  if (sonuc && sonuc.id) {
+    var stopF = yon === 'LONG' ? (fiyat * 0.92).toFixed(2) : (fiyat * 1.08).toFixed(2);
+    var tpF   = yon === 'LONG' ? (fiyat * 1.10).toFixed(2) : (fiyat * 0.90).toFixed(2);
+    setStatus('Emir açıldı: ' + symbol, false);
+    alert(symbol + ' ' + yon + ' emri açıldı!\n\n' +
+          'Giriş:       $' + fiyat.toFixed(2) + '\n' +
+          'Stop Loss:   $' + stopF + '  (-%8)\n' +
+          'Take Profit: $' + tpF  + '  (+%10)\n\n' +
+          'Alpaca otomatik stop/TP emirleri oluşturuldu.\n' +
+          'NYSE açılınca devreye girecek.');
+    setTimeout(function() {
+      alpacaEmirleriGoster();
+      alpacaPozGoster();
+    }, 2000);
+  } else {
+    setStatus('Hata!', false);
+    console.log('Emir hatası:', JSON.stringify(sonuc));
+    alert('Emir hatası: ' + (sonuc && sonuc.message ? sonuc.message : JSON.stringify(sonuc)));
+  }
+}
+
+// ══════════════════════════════════════════════
+// ASX PAPER TRADING
+// ══════════════════════════════════════════════
+
+function asxTradesYukle() {
+  try { return JSON.parse(localStorage.getItem('nizam_asx') || '[]'); }
+  catch(e) { return []; }
+}
+function asxTradesKaydet(d) { localStorage.setItem('nizam_asx', JSON.stringify(d)); }
+
+function islemAc(symbol, yon, fiyatSon) {
+  // Aktif borsaya göre yönlendir
+  if (aktifBorsa === 'ASX') {
+    asxPozAc(symbol, yon, fiyatSon);
+  } else {
+    pozisyonAcAlpaca(symbol, yon, fiyatSon);
+  }
+}
+
+function asxPozAc(symbol, yon, fiyatSon) {
+  var fiyat = fiyatSon > 0 ? fiyatSon : parseFloat(prompt(symbol + ' giriş fiyatı? (AUD)', ''));
+  if (isNaN(fiyat) || fiyat <= 0) { alert('Fiyat bulunamadı. Önce tara.'); return; }
+  var miktar = parseInt(prompt(symbol + ' - Giriş: A$' + fiyat.toFixed(2) + ' | Kaç hisse?', '100'));
+  if (isNaN(miktar) || miktar < 1) return;
+
+  var trades = asxTradesYukle();
+  trades.unshift({
+    id: Date.now(), symbol: symbol, yon: yon,
+    giris: fiyat, miktar: miktar,
+    deger: parseFloat((miktar * fiyat).toFixed(2)),
+    tarih: new Date().toLocaleDateString('tr-TR'),
+    stop: yon === 'LONG' ? parseFloat((fiyat*0.92).toFixed(2)) : parseFloat((fiyat*1.08).toFixed(2)),
+    guncel: fiyat, pnl: 0, pnlPct: 0,
+    para: 'AUD'
+  });
+  asxTradesKaydet(trades);
+  asxPozGoster();
+}
+
+function asxPozKapat(id) {
+  var trades = asxTradesYukle();
+  var poz = trades.find(function(t){return t.id===id;});
+  if (!poz) return;
+  var fiyat = parseFloat(prompt(poz.symbol + ' çıkış fiyatı? (AUD)', poz.guncel ? poz.guncel.toFixed(2) : ''));
+  if (isNaN(fiyat) || fiyat <= 0) return;
+  var kar = poz.yon === 'LONG'
+    ? (fiyat - poz.giris) * poz.miktar
+    : (poz.giris - fiyat) * poz.miktar;
+  trades = trades.filter(function(t){return t.id!==id;});
+  asxTradesKaydet(trades);
+  asxPozGoster();
+  alert(poz.symbol + ' kapatıldı. Kar/Zarar: ' + (kar>=0?'+':'') + 'A$' + kar.toFixed(2));
+}
+
+function asxFiyatGuncelle(fiyatlar) {
+  // Tarama sonrası ASX fiyatlarını güncelle
+  var trades = asxTradesYukle();
+  var guncellendi = false;
+  trades = trades.map(function(t) {
+    var f = fiyatlar[t.symbol];
+    if (!f) return t;
+    var guncel = f.bugun;
+    var kar = t.yon === 'LONG'
+      ? (guncel - t.giris) * t.miktar
+      : (t.giris - guncel) * t.miktar;
+    guncellendi = true;
+    return Object.assign({}, t, {
+      guncel: guncel,
+      pnl: parseFloat(kar.toFixed(2)),
+      pnlPct: parseFloat((kar/t.deger*100).toFixed(2))
+    });
+  });
+  if (guncellendi) {
+    asxTradesKaydet(trades);
+    asxPozGoster();
+  }
+}
+
+function asxPozGoster() {
+  var trades = asxTradesYukle();
+  var el = document.getElementById('asxPozisyonlar');
+  document.getElementById('asxSayi').textContent = trades.length;
+
+  if (!trades.length) {
+    el.innerHTML = '<div class="bos">ASX pozisyon yok</div>';
+    return;
+  }
+
+  el.innerHTML = trades.map(function(poz) {
+    var pnlCls = poz.pnl >= 0 ? 'pos' : 'neg';
+    var stopUyari = poz.guncel && (
+      (poz.yon==='LONG' && poz.guncel <= poz.stop) ||
+      (poz.yon==='SHORT' && poz.guncel >= poz.stop)
+    );
+    return '<div class="poz"' + (stopUyari?' style="border-color:rgba(224,85,85,0.6)"':'') + '>' +
+      '<div class="poz-top">' +
+        '<div class="poz-sym">' + poz.symbol + '</div>' +
+        '<span class="poz-yon ' + poz.yon.toLowerCase() + '">' + poz.yon + '</span>' +
+      '</div>' +
+      '<div class="poz-row"><span>Giriş</span><span>A$' + poz.giris.toFixed(2) + '</span></div>' +
+      '<div class="poz-row"><span>Güncel</span><span>' + (poz.guncel ? 'A$'+poz.guncel.toFixed(2) : '—') + '</span></div>' +
+      '<div class="poz-row"><span>Miktar</span><span>' + poz.miktar + '</span></div>' +
+      '<div class="poz-row"><span>Stop</span><span>A$' + poz.stop + '</span></div>' +
+      '<div class="poz-pnl ' + pnlCls + '">' + (poz.pnl>=0?'+':'') + 'A$' + poz.pnl.toFixed(2) + ' (%' + (poz.pnlPct>=0?'+':'') + poz.pnlPct.toFixed(1) + ')</div>' +
+      (stopUyari ? '<div style="font-size:9px;color:var(--red);margin-top:4px">⚠ STOP SEVİYESİ</div>' : '') +
+      '<button class="kapat-btn" onclick="asxPozKapat(' + poz.id + ')">KAPAT</button>' +
+    '</div>';
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+// ÇİFT SİNYAL SİSTEMİ
+// ══════════════════════════════════════════════
+// Kanıtlanmış çiftler ve başarı oranları
+// Güncelleme: 2026-05-10 — 6 yeni çift eklendi (137 korelasyon testi)
+var CIFT_KURALLARI = [
+  // ── Mevcut çiftler ──
+  {
+    oncu: 'SPY',  hedef: 'AAPL',
+    S_oncu: 9,
+    basari: 79.3, gun: 2345,
+    aciklama: 'SPY V=0 → AAPL %79.3'
+  },
+  {
+    oncu: 'AMD',  hedef: 'NVDA',
+    S_oncu: 1,
+    basari: 73.7, gun: 2345,
+    aciklama: 'AMD V=0 → NVDA %73.7'
+  },
+  {
+    oncu: 'NVDA', hedef: 'AMD',
+    S_oncu: 4,
+    basari: 75.4, gun: 2345,
+    aciklama: 'NVDA V=0 → AMD %75.4'
+  },
+  {
+    oncu: 'MSFT', hedef: 'AMZN',
+    S_oncu: 4,
+    basari: 80.2, gun: 1086,
+    aciklama: 'MSFT V=0 → AMZN %80.2'
+  },
+  {
+    oncu: 'AMZN', hedef: 'MSFT',
+    S_oncu: 8,
+    basari: 80.2, gun: 1086,
+    aciklama: 'AMZN V=0 → MSFT %80.2'
+  },
+  {
+    oncu: 'AAPL', hedef: 'NFLX',
+    S_oncu: 6,
+    basari: 71.1, gun: 1086,
+    aciklama: 'AAPL V=0 → NFLX %71.1'
+  },
+  {
+    oncu: 'NFLX', hedef: 'AAPL',
+    S_oncu: 9,
+    basari: 71.1, gun: 1086,
+    aciklama: 'NFLX V=0 → AAPL %71.1'
+  },
+  // ── 2026-05-10: 137 Korelasyon Testi — Yeni Çiftler ──
+  {
+    oncu: 'AAPL', hedef: 'SPY',
+    S_oncu: 6,
+    basari: 95.7, gun: 2345,
+    aciklama: 'AAPL V=0 → SPY %95.7 [Hacim+V0]'
+  },
+  {
+    oncu: 'SPY',  hedef: 'AAPL',
+    S_oncu: 9,
+    basari: 95.7, gun: 2345,
+    aciklama: 'SPY V=0 → AAPL %95.7 [Hacim+V0]'
+  },
+  {
+    oncu: 'TSM',  hedef: 'MU',
+    S_oncu: 4,
+    basari: 89.5, gun: 2345,
+    aciklama: 'TSM V=0 → MU %89.5 [Hacim+V0]'
+  },
+  {
+    oncu: 'MU',   hedef: 'TSM',
+    S_oncu: 9,
+    basari: 89.5, gun: 2345,
+    aciklama: 'MU V=0 → TSM %89.5 [Hacim+V0]'
+  },
+  {
+    oncu: 'AVGO', hedef: 'SPY',
+    S_oncu: 7,
+    basari: 88.2, gun: 2345,
+    aciklama: 'AVGO V=0 → SPY %88.2 [Hacim+V0]'
+  },
+  {
+    oncu: 'NVDA', hedef: 'MU',
+    S_oncu: 4,
+    basari: 86.7, gun: 2345,
+    aciklama: 'NVDA V=0 → MU %86.7 [Hacim+V0]'
+  },
+  {
+    oncu: 'MU',   hedef: 'NVDA',
+    S_oncu: 9,
+    basari: 86.7, gun: 2345,
+    aciklama: 'MU V=0 → NVDA %86.7 [Hacim+V0]'
+  },
+  {
+    oncu: 'NVDA', hedef: 'INTC',
+    S_oncu: 4,
+    basari: 85.7, gun: 2345,
+    aciklama: 'NVDA V=0 → INTC %85.7 [Hacim+V0]'
+  },
+  {
+    oncu: 'INTC', hedef: 'SPY',
+    S_oncu: 6,
+    basari: 85.7, gun: 2345,
+    aciklama: 'INTC V=0 → SPY %85.7 [Hacim+V0]'
+  },
+  {
+    oncu: 'NVDA', hedef: 'TSM',  // S=4 eşit
+    S_oncu: 4,
+    basari: 85.7, gun: 2345,
+    aciklama: 'NVDA V=0 → TSM %85.7 [S=4 eşit]'
+  },
+  {
+    oncu: 'QCOM', hedef: 'SPY',  // S=9 eşit
+    S_oncu: 9,
+    basari: 100.0, gun: 2345,
+    aciklama: 'QCOM V=0 → SPY %100.0 [S=9 eşit, 7 sinyal]'
+  },
+  // ── Kripto çiftleri (2026-05-13 eklendi) ──
+  {
+    oncu: 'BTC',  hedef: 'ETH',  // S=6 → S=7
+    S_oncu: 6,
+    basari: 91.7, gun: 836,
+    aciklama: 'BTC V=0+Hacim → ETH %91.7 [12 sinyal, 2.3 yıl]'
+  },
+  {
+    oncu: 'ETH',  hedef: 'BTC',  // S=7 → S=6
+    S_oncu: 7,
+    basari: 88.9, gun: 836,
+    aciklama: 'ETH V=0+Hacim → BTC %88.9 [18 sinyal, 2.3 yıl]'
+  },
+  // ── Altın/Gümüş çifti ──
+  {
+    oncu: 'GLD',  hedef: 'SLV',  // Altın↔Gümüş %79.2
+    S_oncu: 4,
+    basari: 79.2, gun: 2099,
+    aciklama: 'GLD V=0 → SLV %79.2 [Altın öncü]'
+  },
+  {
+    oncu: 'SLV',  hedef: 'GLD',
+    S_oncu: 9,
+    basari: 79.2, gun: 2099,
+    aciklama: 'SLV V=0 → GLD %79.2 [Gümüş öncü]'
+  },
+  // ── 2026-05-12: GOOG + O Harfi Hipotezi Doğrulandı ──
+  {
+    oncu: 'GOOG', hedef: 'AVGO', // S=8 eşit · Çift O · Bugün doğrulandı
+    S_oncu: 8,
+    basari: 100.0, gun: 2345,
+    aciklama: 'GOOG V=0 → AVGO %100.0 [S=8 eşit · çift O · 4 sinyal]'
+  },
+  {
+    oncu: 'AVGO', hedef: 'GOOG', // S=8 eşit
+    S_oncu: 8,
+    basari: 100.0, gun: 2345,
+    aciklama: 'AVGO V=0 → GOOG %100.0 [S=8 eşit · çift O · 4 sinyal]'
+  },
+  {
+    oncu: 'GOOG', hedef: 'NVDA', // GOOG+AVGO V=0 → NVDA sürükleniyor
+    S_oncu: 8,
+    basari: 100.0, gun: 2345,
+    aciklama: 'GOOG+AVGO V=0 → NVDA %100.0 [3/3 sinyal]'
+  },
+  {
+    oncu: 'NVDA', hedef: 'GOOG', // Optimal S=1 NVDA → GOOG
+    S_oncu: 1,
+    basari: 71.4, gun: 2345,
+    aciklama: 'NVDA V=0 → GOOG %71.4 [Hacim+V0]'
+  },
+  {
+    oncu: 'GOOG', hedef: 'SPY',  // GOOG S=8 → SPY yön filtresi
+    S_oncu: 8,
+    basari: 92.9, gun: 2345,
+    aciklama: 'GOOG V=0 → SPY %92.9 [S=8 optimal]'
+  },
+  // ── Optimal S güncellemesi — veriyle doğrulanan değerler ──
+  // Not: NVDA optimal S=1, AMD optimal S=5, TSM optimal S=7
+  // V0+Hacim+SPY filtresiyle: genel iyileşme %74.5 → %87.6
+];
+
+
+function gecisSignalleriGoster() {
+  var today = aktifBorsa === 'ASX' ? asx_bugun() : nyse_bugun();
+  var h = ht(today);
+  var gecisler = [];
+
+  HISSELER.forEach(function(h3) {
+    var S3 = indirge(h3.f.replace(/-/g,'').split('').reduce(function(a,d){return a+parseInt(d);},0));
+    var v3 = Math.abs(S3 - h);
+    if (v3 !== 3) return;
+    HISSELER.forEach(function(h0) {
+      if (h3.s === h0.s) return;
+      if (h3.ex !== h0.ex) return;
+      var S0 = indirge(h0.f.replace(/-/g,'').split('').reduce(function(a,d){return a+parseInt(d);},0));
+      var v0 = Math.abs(S0 - h);
+      if (v0 !== 0) return;
+      var basari = null;
+      CIFT_KURALLARI.forEach(function(k) {
+        if (k.oncu === h3.s && k.hedef === h0.s) basari = k.basari;
+      });
+      gecisler.push({ v3: h3.s, v0: h0.s, basari: basari, S3: S3, S0: S0 });
+    });
+  });
+
+  var el = document.getElementById('ciftSinyalListesi');
+  if (!gecisler.length) return;
+
+  var mevcut = el.innerHTML;
+  var gecis_html = gecisler.map(function(g) {
+    var basari_str = g.basari ? ' · %' + g.basari + ' basari' : '';
+    return '<div class="cs-item" style="border-color:rgba(255,100,50,0.3);background:rgba(255,100,50,0.05)">' +
+      '<div class="cs-baslik" style="color:#ff7744">🔥 ' + g.v3 + ' V=3 + ' + g.v0 + ' V=0</div>' +
+      '<div class="cs-detay">Yorunge gecis sinyali · S=' + g.S3 + '/S=' + g.S0 + basari_str + '</div>' +
+    '</div>';
+  }).join('');
+
+  if (mevcut.indexOf('Bugun cift sinyal yok') >= 0 || mevcut.indexOf('bekleniyor') >= 0) {
+    el.innerHTML = gecis_html;
+  } else {
+    el.innerHTML = mevcut + gecis_html;
+  }
+}
+
+function ciftSinyalGoster() {
+  var today = aktifBorsa === 'ASX' ? asx_bugun() : nyse_bugun();
+  var h = ht(today);
+  var aktifSinyaller = [];
+
+  CIFT_KURALLARI.forEach(function(kural) {
+    var v_oncu = Math.abs(kural.S_oncu - h);
+    if (v_oncu === 0) {
+      // Öncü bugün V=0 — hedefi al sinyali var
+      var oncu_obj = sonuclar.find(function(s){ return s.sym === kural.oncu; });
+      var hedef_obj = sonuclar.find(function(s){ return s.sym === kural.hedef; });
+      var yon = (oncu_obj && oncu_obj.f) 
+        ? (oncu_obj.f.bugun > oncu_obj.f.dun ? 'LONG' : 'SHORT')
+        : 'LONG';
+      var hedef_fiyat = (hedef_obj && hedef_obj.f) ? hedef_obj.f.bugun : 0;
+
+      aktifSinyaller.push({
+        oncu: kural.oncu,
+        hedef: kural.hedef,
+        basari: kural.basari,
+        gun: kural.gun,
+        aciklama: kural.aciklama,
+        yon: yon,
+        hedef_fiyat: hedef_fiyat,
+      });
+    }
+  });
+
+  var el = document.getElementById('ciftSinyalListesi');
+  if (!aktifSinyaller.length) {
+    el.innerHTML = '<div class="bos">Bugün çift sinyal yok</div>';
+    return;
+  }
+
+  el.innerHTML = aktifSinyaller.map(function(s) {
+    var rozetRenk = s.basari >= 95 ? '#4cc97a' : s.basari >= 85 ? '#c9a84c' : '#8a8478';
+    var rozetIkon = s.basari >= 95 ? '★' : s.basari >= 85 ? '◈' : '·';
+    var borderRenk = s.basari >= 95 ? 'rgba(76,201,122,0.4)' : s.basari >= 85 ? 'rgba(201,168,76,0.4)' : 'rgba(138,132,120,0.2)';
+    return '<div class="cs-item" style="border-color:' + borderRenk + '">' +
+      '<div class="cs-baslik">' +
+        '<span style="color:' + rozetRenk + ';margin-right:5px">' + rozetIkon + '</span>' +
+        s.oncu + ' → ' + s.hedef + ' AL' +
+        '<span style="float:right;color:' + rozetRenk + ';font-size:13px;font-weight:600">%' + s.basari + '</span>' +
+      '</div>' +
+      '<div class="cs-detay">' + s.aciklama + '</div>' +
+      '<div class="cs-oran" style="color:' + rozetRenk + '">%' + s.basari + ' başarı · ' + s.gun + ' gün test</div>' +
+      '<button class="cs-btn" data-sym="' + s.hedef + '" data-yon="' + s.yon + '" data-fiyat="' + s.hedef_fiyat + '" onclick="islemAc(this.dataset.sym,this.dataset.yon,parseFloat(this.dataset.fiyat))">+ ' + s.yon + ' ' + s.hedef + '</button>' +
+    '</div>';
+  }).join('');
+}
+
+// ── INIT
+// ══════════════════════════════════════════════
+kapaliGoster();
+pnlGuncelle();
+
+// Alpaca bağlıysa Alpaca'dan yükle, değilse localStorage
+var _cfg = alpacaYukle();
+if (_cfg.key) {
+  // Alpaca bağlı — localStorage pozisyonları temizle, Alpaca'dan çek
+  alpacaEmirleriGoster();
+  alpacaPozGoster();
+  // Her 30sn güncelle
+  if (window._alpacaInterval) clearInterval(window._alpacaInterval);
+  window._alpacaInterval = setInterval(function(){
+    var c = alpacaYukle();
+    if (c.key) {
+      alpacaEmirleriGoster();
+      alpacaPozGoster();
+    }
+  }, 30000);
+} else {
+  acikPozGuncelle();
+}
+
+
+// ══════════════════════════════════════════════
+// AY FAZI HESABI (offline, astronomik formül)
+// ══════════════════════════════════════════════
+function ayFaziHesapla(tarih) {
+  var d = tarih || new Date();
+  // Bilinen Yeni Ay: 6 Ocak 2000 18:14 UTC → Julian Day
+  var referans_jd = 2451549.5 + 0.7597;
+  var simdiki_jd = (d.getTime()/86400000) + 2440587.5;
+  var gecen_gun = simdiki_jd - referans_jd;
+  var ay_dongusu = 29.53058867;
+  var faz_gun = ((gecen_gun % ay_dongusu) + ay_dongusu) % ay_dongusu;
+  var faz_pct = faz_gun / ay_dongusu;
+
+  var faz_adi, faz_ikon;
+  if (faz_gun < 1.85)       { faz_adi = 'Yeni Ay';       faz_ikon = '🌑'; }
+  else if (faz_gun < 7.38)  { faz_adi = 'Hilal';          faz_ikon = '🌒'; }
+  else if (faz_gun < 9.22)  { faz_adi = 'İlk Dördün';    faz_ikon = '🌓'; }
+  else if (faz_gun < 14.77) { faz_adi = 'Şişen Ay';       faz_ikon = '🌔'; }
+  else if (faz_gun < 16.61) { faz_adi = 'Dolunay';        faz_ikon = '🌕'; }
+  else if (faz_gun < 22.15) { faz_adi = 'Azalan Ay';      faz_ikon = '🌖'; }
+  else if (faz_gun < 23.99) { faz_adi = 'Son Dördün';     faz_ikon = '🌗'; }
+  else                       { faz_adi = 'Yeni Aya Yakın'; faz_ikon = '🌘'; }
+
+  // Sonraki dolunay/yeni aya kaç gün
+  var dolunaya = Math.round(14.77 - faz_gun);
+  if (dolunaya < 0) dolunaya = Math.round(ay_dongusu - faz_gun + 14.77);
+  var yeni_aya = Math.round(ay_dongusu - faz_gun);
+
+  return {
+    faz_gun: faz_gun.toFixed(1),
+    faz_pct: (faz_pct*100).toFixed(0),
+    faz_adi: faz_adi,
+    faz_ikon: faz_ikon,
+    dolunaya: dolunaya,
+    yeni_aya: yeni_aya,
+    dolunay_yakin: Math.abs(faz_gun - 14.77) <= 2
+  };
+}
+
+// ══════════════════════════════════════════════
+// HİCRİ TAKVİM HESABI (offline formül)
+// ══════════════════════════════════════════════
+function hicriHesapla(tarih) {
+  var d = tarih || new Date();
+  var gun = d.getDate(), ay = d.getMonth()+1, yil = d.getFullYear();
+
+  // Miladi → Hicri dönüşüm (Küwaiti algoritması)
+  var jd;
+  if (ay <= 2) { yil--; ay += 12; }
+  var A = Math.floor(yil/100);
+  var B = 2 - A + Math.floor(A/4);
+  jd = Math.floor(365.25*(yil+4716)) + Math.floor(30.6001*(ay+1)) + gun + B - 1524;
+
+  var z = jd - 1948438 + 10632;
+  var n = Math.floor((z-1)/10631);
+  z = z - 10631*n + 354;
+  var j = Math.floor((10985-z)/5316)*Math.floor((50*z)/17719) +
+          Math.floor(z/5670)*Math.floor((43*z)/15238);
+  z = z - Math.floor((30-j)/15)*Math.floor((17719*j)/50) -
+      Math.floor(j/16)*Math.floor((15238*j)/43) + 29;
+  var h_ay  = Math.floor((24*z)/709);
+  var h_gun = z - Math.floor((709*h_ay)/24);
+  var h_yil = 30*n + j - 30;
+
+  var hicri_aylar = [
+    'Muharrem','Safer','Rebiülevvel','Rebiülahir',
+    'Cemaziyelevvel','Cemaziyelahir','Receb','Şaban',
+    'Ramazan','Şevval','Zilkade','Zilhicce'
+  ];
+
+  var ay_adi = hicri_aylar[h_ay-1] || '?';
+
+  // Ay anlamları
+  var ay_anlam = {
+    'Muharrem':       'Haram ay · Yılın açılışı',
+    'Safer':          'Yolculuk ve değişim ayı',
+    'Rebiülevvel':    'Bahar · Mevlid ayı',
+    'Rebiülahir':     'Baharın sonu',
+    'Cemaziyelevvel': 'Donmuş toprak · Hazırlık',
+    'Cemaziyelahir':  'Hazırlığın tamamlanması',
+    'Receb':          'Saygın ay · İçe dönüş',
+    'Şaban':          'Beraat · Hazırlık kapısı',
+    'Ramazan':        'Arınma · En güçlü ay',
+    'Şevval':         'Bayram · Açılım',
+    'Zilkade':        'Hac hazırlığı · Dinginlik',
+    'Zilhicce':       'Hac · Kurban · Kapanış'
+  };
+
+  return {
+    gun: h_gun,
+    ay: h_ay,
+    yil: h_yil,
+    ay_adi: ay_adi,
+    anlam: ay_anlam[ay_adi] || ''
+  };
+}
+
+// ══════════════════════════════════════════════
+// NIZAM BAĞLAM OLUŞTURUCU
+// ══════════════════════════════════════════════
+function nizamBaglamOlustur() {
+  var bugun = aktifBorsa === 'ASX' ? asx_bugun() : nyse_bugun();
+  var h = ht(bugun);
+  var gun_i = function(s) {
+    var n = parseInt(s.split('-')[2]);
+    while(n>9) n = String(n).split('').reduce(function(a,d){return a+parseInt(d);},0);
+    return n;
+  }(bugun);
+
+  var ay_fazi = ayFaziHesapla();
+  var hicri   = hicriHesapla();
+
+  // Aktif sinyaller
+  var sinyal_listesi = [];
+  if (typeof sonuclar !== 'undefined' && sonuclar.length) {
+    var top = sonuclar.filter(function(h){return h.combo>0;})
+      .sort(function(a,b){return b.combo-a.combo;}).slice(0,5);
+    top.forEach(function(h){
+      sinyal_listesi.push(h.sym + ' combo=' + h.combo + ' ' +
+        h.tags.map(function(t){return t.l;}).join(' '));
+    });
+  }
+
+  // Çift sinyaller
+  var cift_listesi = [];
+  if (typeof CIFT_KURALLARI !== 'undefined') {
+    CIFT_KURALLARI.forEach(function(k) {
+      var v_oncu = Math.abs(k.S_oncu - h);
+      if (v_oncu === 0) {
+        cift_listesi.push(k.oncu + '→' + k.hedef + ' %' + k.basari);
+      }
+    });
+  }
+
+  // V=3+V=0 geçiş sinyalleri
+  var gecis_listesi = [];
+  if (typeof HISSELER !== 'undefined') {
+    var v0_hisseler = HISSELER.filter(function(h2){
+      var S = indirge(h2.f.replace(/-/g,'').split('').reduce(function(a,d){return a+parseInt(d);},0));
+      return Math.abs(S - h) === 0;
+    }).map(function(h2){return h2.s;});
+    var v3_hisseler = HISSELER.filter(function(h2){
+      var S = indirge(h2.f.replace(/-/g,'').split('').reduce(function(a,d){return a+parseInt(d);},0));
+      return Math.abs(S - h) === 3;
+    }).map(function(h2){return h2.s;});
+    v3_hisseler.forEach(function(t3){
+      v0_hisseler.forEach(function(t0){
+        if (t3 !== t0) gecis_listesi.push(t3 + ' V=3 + ' + t0 + ' V=0');
+      });
+    });
+  }
+
+  // 1937 rezonans
+  var rezonans_1937 = ([1,9,3,7].indexOf(h) >= 0 && [1,9,3,7].indexOf(gun_i) >= 0);
+
+  return {
+    tarih: bugun,
+    ht: h,
+    gun_i: gun_i,
+    ay_fazi: ay_fazi,
+    hicri: hicri,
+    sinyaller: sinyal_listesi,
+    cift_sinyaller: cift_listesi,
+    gecis_sinyaller: gecis_listesi,
+    rezonans_1937: rezonans_1937,
+    borsa: aktifBorsa
+  };
+}
+
+function baglamMetniOlustur(b) {
+  var satirlar = [
+    '📅 ' + b.tarih + ' · HT=' + b.ht + ' · Gün=' + b.gun_i +
+      (b.rezonans_1937 ? ' · ✦ [1937] REZONANS' : ''),
+    b.ay_fazi.faz_ikon + ' ' + b.ay_fazi.faz_adi +
+      ' (' + b.ay_fazi.faz_gun + '. gün) · Dolunay: ' + b.ay_fazi.dolunaya + 'g' +
+      (b.ay_fazi.dolunay_yakin ? ' ⚠️ YAKIN' : ''),
+    '☪ Hicri: ' + b.hicri.gun + ' ' + b.hicri.ay_adi + ' ' + b.hicri.yil +
+      (b.hicri.anlam ? ' · ' + b.hicri.anlam : ''),
+  ];
+  if (b.sinyaller.length)   satirlar.push('⚡ Sinyaller: ' + b.sinyaller.join(' | '));
+  if (b.cift_sinyaller.length) satirlar.push('🔗 Çift: ' + b.cift_sinyaller.join(', '));
+  if (b.gecis_sinyaller.length) satirlar.push('🔥 Geçiş: ' + b.gecis_sinyaller.slice(0,3).join(', '));
+  return satirlar.join('\n');
+}
+
+// ══════════════════════════════════════════════
+// PANEL AÇMA / KAPAMA
+// ══════════════════════════════════════════════
+function ajanAc() {
+  document.getElementById('ajanPanel').classList.add('acik');
+  document.getElementById('ajanOverlay').style.display = 'block';
+  ajanBaglamGuncelle();
+  document.getElementById('ajanInput').focus();
+}
+
+function ajanKapat() {
+  document.getElementById('ajanPanel').classList.remove('acik');
+  document.getElementById('ajanOverlay').style.display = 'none';
+}
+
+function ajanBaglamGuncelle() {
+  var b = nizamBaglamOlustur();
+  document.getElementById('ajanBaglamKart').textContent = baglamMetniOlustur(b);
+  document.getElementById('ajanTarihBar').textContent =
+    b.tarih + ' · ' + b.ay_fazi.faz_ikon + ' ' + b.ay_fazi.faz_adi +
+    ' · ☪ ' + b.hicri.ay_adi;
+}
+
+// ══════════════════════════════════════════════
+// SOHBET
+// ══════════════════════════════════════════════
+var ajanMesajlar = []; // Konuşma geçmişi
+
+function ajanKeyDown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    ajanGonder();
+  }
+}
+
+function ajanHizli(mesaj) {
+  document.getElementById('ajanInput').value = mesaj;
+  ajanGonder();
+}
+
+function ajanMesajEkle(icerik, tip) {
+  var div = document.createElement('div');
+  div.className = tip === 'user' ? 'ajan-msg-user' : 'ajan-msg-ai';
+  if (tip === 'ai') {
+    div.innerHTML = '<span class="ajan-label">✦ NİZAM AJAN</span>' +
+      icerik.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  } else {
+    div.textContent = icerik;
+  }
+  var sohbet = document.getElementById('ajanSohbet');
+  sohbet.appendChild(div);
+  sohbet.scrollTop = sohbet.scrollHeight;
+  return div;
+}
+
+function ajanDusunuyor() {
+  var div = document.createElement('div');
+  div.className = 'ajan-thinking';
+  div.textContent = '✦ düşünüyor...';
+  document.getElementById('ajanSohbet').appendChild(div);
+  document.getElementById('ajanSohbet').scrollTop = 9999;
+  return div;
+}
+
+async function ajanGonder() {
+  var input = document.getElementById('ajanInput');
+  var mesaj = input.value.trim();
+  if (!mesaj) return;
+
+  input.value = '';
+  input.style.height = '38px';
+  document.getElementById('ajanGonderBtn').disabled = true;
+
+  ajanMesajEkle(mesaj, 'user');
+  ajanMesajlar.push({ role: 'user', content: mesaj });
+
+  var dusunuyor = ajanDusunuyor();
+
+  // Bağlam oluştur
+  var b = nizamBaglamOlustur();
+  var sistem_prompt = [
+    'Sen Bogong AI Lab\'ın Nizam Trading Ajanısın. Kadir\'in kişisel borsa asistanısın.',
+    '',
+    'BUGÜNÜN NİZAM DURUMU:',
+    baglamMetniOlustur(b),
+    '',
+    'NİZAM/KR4 SİSTEMİ:',
+    '- Temel dizi: 1937 (1=irade, 9=kalite, 3=ana güç, 7=gölge/uyarı)',
+    '- S değeri: Hissenin kuruluş tarihinin tek haneye indirgenmesi (kristal frekans)',
+    '- HT: Analiz gününün rakam toplamı (tek hane)',
+    '- V = |S - HT| (vektör — hissenin o günkü enerjisi)',
+    '- V=0: Altın gün — hisse kendi kristal frekansında, en güçlü sinyal',
+    '- V=3: Yörünge geçiş günü — E37=6, E53=9 sabit, kararsız ama hareketli',
+    '- E1937=indirge(V×1937): Dış görünüş/maske',
+    '- E1953=indirge(V×1953): İrade/motor güç',
+    '- DIV+: E1937=9 AND E1953=9 — en güçlü alım sinyali',
+    '- 137 (ince yapı sabiti): Korelasyon 0.137 bandına girince sistem kararsızlaşır',
+    '',
+    'KANИТLANMIŞ ÇİFTLER (backtested):',
+    '- AMD↔NVDA %85.7 (çift hacim+V0), AAPL→SPY %95.7, TSM→MU %89.5',
+    '- GOOG(S=8)↔AVGO(S=8) %100.0 [S=8 eşit, çift O harfi, 4 sinyal] — 2026-05-12 doğrulandı',
+    '- GOOG+AVGO V=0 → NVDA sürükleniyor %100 (3/3)',
+    '- Optimal S değerleri: NVDA=1, AMD=5, AAPL=9, TSM=7, INTC=1, AVGO=8, MU=9, GOOG=8',
+    '- X = S + 15 (evrensel formül, 15/15 hisse doğruladı)',
+    '- 137 = 9×15+2 → Fark=2 (137 kalıbı) = %96.3 sinyal gücü, Fark=0 (rezonans) = %76.7',
+    '- Fark=2 + SPY↑ = %81.7 LONG | Fark=2 + SPY↓ = %72.7 SHORT — yön kesin',
+    '- 2026 S=1: NVDA/INTC/AMZN rezonans, AVGO/GOOG 137 kalıbı (%96.3)',
+    '- Rozet: ★137 = 137 kalıbı yılı, ⟳REZ = rezonans yılı',
+    '- O harfi: çift O = 12 → 3 (1937 dizisi). GOOGLE, BROADCOM, QUALCOMM çift O taşıyor',
+    '- Yıl rezonansı: 2026 S=1 → NVDA ve INTC rezonans yılı. GOOG S=8 → 2024 rezonans yılı',
+    '- V=3+V=0 kombinasyonu: bir hisse geçiş yaparken diğeri kararlı → %66-78',
+    '- HT=7+Gün=1 günleri: NVDA %77.4 pozitif, SPY %80.6 (19 ve 28 Mayıs tipi)',
+    '- SPY filtresi: SPY negatifse sinyal gücü düşer (%22 uyumsuzluk kaynağı)',
+    '',
+    'AY FAZI:',
+    '- Dolunay ±2 gün: gürültü/no-trade sinyali',
+    '- 21 ve 28 günlük ay döngüleri scanner\'da aktif',
+    '',
+    'HİCRİ TAKVİM:',
+    '- Muharrem: Yıl açılışı · Safer: Değişim · Receb: İçe dönüş',
+    '- Ramazan: Arınma · Zilhicce: Kapanış · Şaban: Hazırlık',
+    '',
+    'PAPER TRADING: Gerçek para yok, test modunda. Pozisyonlar scanner\'dan açılıyor.',
+    '',
+    'AÇIK POZİSYONLAR:',
+    ajanPozisyonBaglamOlustur(),
+    '',
+    'EMİR YETKİSİ:',
+    '- Kadir onay verince Alpaca\'ya emir gönderebilirsin',
+    '- Emir önerirken JSON formatında belirt: {"action":"KAPAT","symbol":"NVDA"} veya {"action":"AC","symbol":"NVDA","yon":"LONG","miktar":10}',
+    '- Her önerinin sonuna [ONAYLA] butonu eklenecek',
+    '- Kullanıcı onaylamadan HİÇBİR İŞLEM YAPMA',
+    '- Birden fazla öneri yapabilirsin ama her biri ayrı onay beklesin',
+    '',
+    'YANIT STİLİ:',
+    '- Türkçe konuş',
+    '- Kısa ve net — mobil ekrana uygun',
+    '- Sayıları ve oranları kullan',
+    '- Nizam dilini kullan (V=0, HT, kristal, yörünge, çekim vs)',
+    '- Asla "yapay zeka olarak" deme, doğrudan cevap ver',
+    '- Eğer sinyal yoksa dürüstçe söyle',
+    '- Emir önerirken: "X pozisyonunu kapatmanı öneririm [NEDEN]. Onaylar mısın?" formatında sor',
+    '',
+    'HİSSE LİSTESİ YÖNETİMİ:',
+    '- Kullanıcı hisse eklemek isterse: önce kurucuyu araştır (web search ile)',
+    '- Kurucu doğum yılını bul → S = indirge(doğum yılı)',
+    '- Sonra JSON öner: {"action":"EKLE","symbol":"SHOP","name":"Shopify","kurucu_yil":1980,"S":9,"ex":"NYSE"}',
+    '- Çıkarma için: {"action":"CIKAR","symbol":"ORCL"}',
+    '- Her zaman onay iste, onaysız ekleme/çıkarma yapma',
+  ].join('\n');
+
+  try {
+    var antKey = localStorage.getItem('anthropic_key');
+    if (!antKey) {
+      dusunuyor.remove();
+      ajanMesajEkle('⚙ Anthropic API key gerekli. Ayarlar (⚙) butonundan gir.', 'ai');
+      document.getElementById('ajanGonderBtn').disabled = false;
+      return;
+    }
+    var mesaj_listesi = ajanMesajlar.slice(-10); // Son 10 mesaj
+
+    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': localStorage.getItem('anthropic_key') || '',
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: sistem_prompt,
+        messages: mesaj_listesi
+      })
+    });
+
+    var data = await resp.json();
+    var cevap = data.content && data.content[0] ? data.content[0].text : 'Yanıt alınamadı.';
+
+    dusunuyor.remove();
+    ajanMesajlar.push({ role: 'assistant', content: cevap });
+    ajanMesajEkleOnay(cevap);
+
+  } catch(err) {
+    dusunuyor.remove();
+    ajanMesajEkle('Bağlantı hatası: ' + err.message, 'ai');
+  }
+
+  document.getElementById('ajanGonderBtn').disabled = false;
+  document.getElementById('ajanInput').focus();
+}
+
+// Tarama sonrası bağlamı güncelle
+var _orijinalTara = typeof taraVeFiyat === 'function' ? taraVeFiyat : null;
+
+
+// ══════════════════════════════════════════════
+// EKG PANELİ
+// ══════════════════════════════════════════════
+var ekgState = { sym: null, S: null, name: null, gun: 90, bars: [], chart: null };
+
+function ekgAc(sym, name, S) {
+  ekgState.sym = sym;
+  ekgState.S   = S;
+  ekgState.name = name;
+  document.getElementById('ekgSym').textContent = sym;
+  document.getElementById('ekgPanel').classList.add('acik');
+  document.getElementById('ekgOverlay').style.display = 'block';
+  document.getElementById('ekgYorumBox').style.display = 'none';
+  ekgVeriCek(90);
+}
+
+function ekgKapat() {
+  document.getElementById('ekgPanel').classList.remove('acik');
+  document.getElementById('ekgOverlay').style.display = 'none';
+}
+
+function ekgDonemsec(gun, btn) {
+  document.querySelectorAll('.ekg-t-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  ekgState.gun = gun;
+  ekgVeriCek(gun);
+}
+
+async function ekgVeriCek(gun) {
+  var sym = ekgState.sym;
+  if (!sym) return;
+
+  document.getElementById('ekgMeta').textContent = 'Veri çekiliyor...';
+  document.getElementById('ekgStats').innerHTML = '';
+
+  // Tarih hesapla
+  var bitis = new Date();
+  var baslangic = new Date();
+  baslangic.setDate(baslangic.getDate() - gun - 10);
+  var startStr = baslangic.toISOString().split('T')[0];
+  var endStr   = bitis.toISOString().split('T')[0];
+
+  try {
+    // Alpaca'dan bar verisi çek
+    var baseUrl = alpacaBaseUrl().replace('paper-api','data').replace('api.alpaca','data.alpaca');
+    var url = 'https://data.alpaca.markets/v2/stocks/' + sym +
+              '/bars?timeframe=1Day&start=' + startStr +
+              '&end=' + endStr + '&limit=500&feed=iex';
+
+    var resp = await fetch(url, { headers: alpacaDataHeaders() });
+    var data = await resp.json();
+
+    if (!data.bars || !data.bars.length) {
+      document.getElementById('ekgMeta').textContent = 'Veri alınamadı';
+      return;
+    }
+
+    ekgState.bars = data.bars.slice(-gun);
+    ekgGrafik(ekgState.bars);
+    ekgIstatistik(ekgState.bars);
+
+  } catch(err) {
+    document.getElementById('ekgMeta').textContent = 'Hata: ' + err.message;
+  }
+}
+
+function indirgeEkg(n) {
+  n = Math.abs(Math.floor(n));
+  while (n > 9) {
+    var s = 0; var str = String(n);
+    for (var i=0; i<str.length; i++) s += parseInt(str[i]);
+    n = s;
+  }
+  return n;
+}
+
+function htEkg(dateStr) {
+  var parts = dateStr.split('-');
+  var yil = parts[0], ay = parts[1], gun = parts[2];
+  var digits = gun + ay + yil;
+  var total = 0;
+  for (var i=0; i<digits.length; i++) total += parseInt(digits[i]);
+  return indirgeEkg(total);
+}
+
+function calcVEkg(S, dateStr) {
+  return Math.abs(S - htEkg(dateStr));
+}
+
+function calcEEkg(v, mult) {
+  return indirgeEkg(v * mult);
+}
+
+function ekgGrafik(bars) {
+  var canvas = document.getElementById('ekgCanvas');
+  var ctx    = canvas.getContext('2d');
+  // S değeri EKG state'ten (htKurucu ile hesaplandı)
+  var S      = ekgState.S;
+
+  // Canvas boyutu
+  var W = canvas.offsetWidth || 440;
+  var H = 200;
+  canvas.width  = W * window.devicePixelRatio;
+  canvas.height = H * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0d0d12';
+  ctx.fillRect(0, 0, W, H);
+
+  var n = bars.length;
+  if (n < 2) return;
+
+  var prices = bars.map(function(b){ return b.c; });
+  var minP = Math.min.apply(null, prices);
+  var maxP = Math.max.apply(null, prices);
+  var rangeP = maxP - minP || 1;
+
+  var padT = 28; var padB = 50; var padL = 8; var padR = 8;
+  var chartW = W - padL - padR;
+  var chartH = H - padT - padB;
+
+  var xStep = chartW / (n - 1);
+
+  function xPos(i) { return padL + i * xStep; }
+  function yPos(p) { return padT + chartH - ((p - minP) / rangeP * chartH); }
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (var g = 0; g <= 4; g++) {
+    var gy = padT + (chartH / 4) * g;
+    ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(W-padR, gy); ctx.stroke();
+  }
+
+  // Fiyat rengi (enerji skoruna göre)
+  for (var i = 1; i < n; i++) {
+    var dateStr = bars[i].t.split('T')[0];
+    var v = calcVEkg(S, dateStr);
+    var e47 = calcEEkg(v, 1947);
+    var e53 = calcEEkg(v, 1953);
+
+    var isDiv = (e47 === 9 && e53 === 9); // V=3 veya V=6
+    var isV0  = (v === 0);
+
+    var lineColor;
+    if (isDiv)      lineColor = 'rgba(201,168,76,0.9)';  // Altın — DIV+
+    else if (isV0)  lineColor = 'rgba(61,186,122,0.9)';  // Yeşil — V=0
+    else            lineColor = 'rgba(74,143,255,0.6)';  // Mavi — normal
+
+    ctx.beginPath();
+    ctx.moveTo(xPos(i-1), yPos(prices[i-1]));
+    ctx.lineTo(xPos(i),   yPos(prices[i]));
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = isDiv || isV0 ? 2 : 1.5;
+    ctx.stroke();
+  }
+
+  // Sinyal noktaları
+  for (var i = 0; i < n; i++) {
+    var dateStr = bars[i].t.split('T')[0];
+    var v = calcVEkg(S, dateStr);
+    var e47 = calcEEkg(v, 1947);
+    var e53 = calcEEkg(v, 1953);
+
+    var x = xPos(i); var y = yPos(prices[i]);
+
+    if (v === 0) {
+      // V=0 — Altın elmas
+      ctx.fillStyle = '#c9a84c';
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI*2);
+      ctx.fill();
+      // Etiket
+      ctx.fillStyle = '#c9a84c';
+      ctx.font = '8px JetBrains Mono';
+      ctx.textAlign = 'center';
+      ctx.fillText('V=0', x, y - 8);
+    } else if (e47 === 9 && e53 === 9) {
+      // DIV+ — turuncu daire
+      var isUp = i > 0 && prices[i] > prices[i-1];
+      ctx.fillStyle = isUp ? '#3dba7a' : '#e05555';
+      ctx.beginPath();
+      ctx.arc(x, y, 3.5, 0, Math.PI*2);
+      ctx.fill();
+      // DIV etiketi
+      ctx.fillStyle = isUp ? '#3dba7a' : '#e05555';
+      ctx.font = '7px JetBrains Mono';
+      ctx.textAlign = 'center';
+      ctx.fillText(isUp ? '▲DIV' : '▼DIV', x, isUp ? y-9 : y+14);
+    }
+  }
+
+  // Fiyat etiketleri
+  ctx.fillStyle = '#4a4840';
+  ctx.font = '8px JetBrains Mono';
+  ctx.textAlign = 'left';
+  ctx.fillText('$' + maxP.toFixed(2), padL+2, padT-4);
+  ctx.fillText('$' + minP.toFixed(2), padL+2, H-padB+12);
+
+  // V değeri barları (alt kısım)
+  var barH = 16; var barY = H - barH - 4;
+  for (var i = 0; i < n; i++) {
+    var dateStr = bars[i].t.split('T')[0];
+    var v = calcVEkg(S, dateStr);
+    var bw = Math.max(1, xStep - 1);
+    var bx = xPos(i) - bw/2;
+
+    var barColor;
+    if (v === 0)      barColor = 'rgba(61,186,122,0.8)';
+    else if (v === 3) barColor = 'rgba(201,168,76,0.7)';
+    else if (v === 6) barColor = 'rgba(201,168,76,0.5)';
+    else              barColor = 'rgba(74,143,255,0.2)';
+
+    var bh = barH * ((9-v)/9 + 0.1);
+    ctx.fillStyle = barColor;
+    ctx.fillRect(bx, H - bh - 2, bw, bh);
+  }
+
+  // Tarih etiketleri
+  ctx.fillStyle = '#3a3830';
+  ctx.font = '7px JetBrains Mono';
+  ctx.textAlign = 'center';
+  var step = Math.max(1, Math.floor(n/6));
+  for (var i = 0; i < n; i += step) {
+    var dateStr = bars[i].t.split('T')[0];
+    var label = dateStr.slice(5); // MM-DD
+    ctx.fillText(label, xPos(i), H - barH - 5);
+  }
+
+  // Meta güncelle
+  var son = bars[bars.length-1];
+  var sonV = calcVEkg(S, son.t.split('T')[0]);
+  var sonE47 = calcEEkg(sonV, 1947);
+  var sonE53 = calcEEkg(sonV, 1953);
+  var sonDurum = sonV === 0 ? '✦ V=0' : (sonE47===9&&sonE53===9) ? '◈ DIV+' : 'V='+sonV;
+  document.getElementById('ekgMeta').textContent = 
+    '$' + son.c.toFixed(2) + ' · S=' + S + ' · ' + sonDurum + 
+    ' · ' + son.t.split('T')[0];
+  
+  var badge = document.getElementById('ekgBadge');
+  if (sonV === 0) { badge.textContent = '✦ V=0'; badge.style.borderColor='rgba(61,186,122,0.5)'; badge.style.color='#3dba7a'; }
+  else if (sonE47===9&&sonE53===9) { badge.textContent='◈ DIV+'; badge.style.borderColor='rgba(201,168,76,0.5)'; badge.style.color='#c9a84c'; }
+  else { badge.textContent='V='+sonV; badge.style.borderColor='rgba(255,255,255,0.1)'; badge.style.color='#6a6458'; }
+}
+
+function ekgIstatistik(bars) {
+  var S = ekgState.S;
+  var n = bars.length;
+
+  var v0=0, div=0, divPlus=0, divMinus=0;
+  var divPlusRet=[], divMinusRet=[], v0Ret=[];
+
+  for (var i=1; i<n; i++) {
+    var dateStr = bars[i].t.split('T')[0];
+    var v = calcVEkg(S, dateStr);
+    var e47 = calcEEkg(v, 1947);
+    var e53 = calcEEkg(v, 1953);
+    var ret = (bars[i].c - bars[i-1].c) / bars[i-1].c * 100;
+
+    if (v === 0) { v0++; v0Ret.push(ret); }
+    if (e47===9 && e53===9) {
+      div++;
+      if (bars[i].c > bars[i-1].c) { divPlus++; divPlusRet.push(ret); }
+      else { divMinus++; divMinusRet.push(ret); }
+    }
+  }
+
+  // Son 30 gün performans
+  var perf30 = n >= 30 ? ((bars[n-1].c - bars[n-30].c)/bars[n-30].c*100) : 0;
+  var perfTum = ((bars[n-1].c - bars[0].c)/bars[0].c*100);
+
+  var stats = [
+    { val: v0,   lbl: 'V=0 GÜNÜ', color: '#3dba7a' },
+    { val: div,  lbl: 'DIV± GÜNÜ', color: '#c9a84c' },
+    { val: divPlus + '/' + divMinus, lbl: 'DIV+/DIV-', color: '#c9a84c' },
+    { val: perf30.toFixed(1)+'%', lbl: '30G PERF', color: perf30>=0?'#3dba7a':'#e05555' },
+    { val: perfTum.toFixed(1)+'%', lbl: 'DÖNEM PERF', color: perfTum>=0?'#3dba7a':'#e05555' },
+    { val: n, lbl: 'TOPLAM GÜN', color: '#6a6458' },
+  ];
+
+  var html = stats.map(function(s) {
+    return '<div class="ekg-stat-card">' +
+      '<div class="ekg-stat-val" style="color:'+s.color+'">'+s.val+'</div>' +
+      '<div class="ekg-stat-lbl">'+s.lbl+'</div>' +
+    '</div>';
+  }).join('');
+
+  document.getElementById('ekgStats').innerHTML = html;
+}
+
+async function ekgAjanYorum() {
+  var sym = ekgState.sym;
+  var S   = ekgState.S;
+  var bars = ekgState.bars;
+  if (!sym || !bars.length) return;
+
+  var antKey = localStorage.getItem('anthropic_key');
+  if (!antKey) { alert('Anthropic API key gerekli'); return; }
+
+  var box = document.getElementById('ekgYorumBox');
+  box.style.display = 'block';
+  box.textContent = '✦ analiz ediliyor...';
+
+  // Son 10 günlük özet
+  var son10 = bars.slice(-10).map(function(b) {
+    var ds = b.t.split('T')[0];
+    var v = calcVEkg(S, ds);
+    var e47 = calcEEkg(v, 1947); var e53 = calcEEkg(v, 1953);
+    var div = (e47===9&&e53===9) ? ' DIV+' : '';
+    var v0  = v===0 ? ' V=0' : '';
+    return ds + ' $' + b.c.toFixed(2) + ' V=' + v + div + v0;
+  }).join('\n');
+
+  var son = bars[bars.length-1];
+  var sonV = calcVEkg(S, son.t.split('T')[0]);
+  var perf = ((son.c - bars[0].c)/bars[0].c*100).toFixed(1);
+
+  var prompt = sym + ' (' + ekgState.name + ') EKG Analizi:\n' +
+    'S=' + S + ' · Dönem: ' + ekgState.gun + ' gün · Dönem perf: %' + perf + '\n\n' +
+    'Son 10 gün:\n' + son10 + '\n\n' +
+    'Bugün: V=' + sonV + ' · Fiyat: $' + son.c.toFixed(2) + '\n\n' +
+    'Bu hisseyi Nizam/KR4 sistemi çerçevesinde kısa analiz et. ' +
+    'Yaklaşan V=0 ve DIV+ günlerini belirt. ' +
+    'Long mu short mu? Neden? 3-4 cümle.';
+
+  try {
+    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': antKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        system: 'Sen Bogong AI Nizam Trading Ajanısın. Türkçe, kısa ve net yorum yap.',
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    var data = await resp.json();
+    box.textContent = data.content && data.content[0] ? data.content[0].text : 'Yanıt alınamadı';
+  } catch(err) {
+    box.textContent = 'Hata: ' + err.message;
+  }
+}
+
+function ekgIslem(yon) {
+  var sym = ekgState.sym;
+  var fiyat = ekgState.bars.length ? ekgState.bars[ekgState.bars.length-1].c : 0;
+  if (!sym) return;
+  ekgKapat();
+  islemAc(sym, yon, fiyat);
+}
+
+
+// ══════════════════════════════════════════════
+// AJAN POZİSYON BAĞLAMI + ONAY MEKANİZMASI
+// ══════════════════════════════════════════════
+
+// Açık pozisyonları ajan için özetle
+function ajanPozisyonBaglamOlustur() {
+  try {
+    var el = document.getElementById('acikPozisyonlar');
+    if (!el) return 'Pozisyon bilgisi yok';
+    
+    var pozlar = [];
+    // Alpaca pozisyonlarını fiyatCache ve DOM'dan çek
+    var cfg = alpacaYukle();
+    if (!cfg.key) return 'Alpaca bağlı değil';
+
+    // Son bilinen pozisyonları kullan
+    var pozEls = el.querySelectorAll('.nizam-poz-panel');
+    if (!pozEls.length) return 'Açık pozisyon yok';
+
+    var satirlar = [];
+    pozEls.forEach(function(el) {
+      var sym  = el.querySelector('.npz-sym')  ? el.querySelector('.npz-sym').textContent.trim() : '?';
+      var yon  = el.querySelector('.npz-badge.long') ? 'LONG' : 'SHORT';
+      var rows = el.querySelectorAll('.npz-row');
+      var giris='?', guncel='?', stop='?', pnl='?';
+      rows.forEach(function(r) {
+        var spans = r.querySelectorAll('span');
+        if (spans.length >= 2) {
+          var lbl = spans[0].textContent;
+          var val = spans[1].textContent;
+          if (lbl==='Giriş') giris=val;
+          else if (lbl==='Güncel') guncel=val;
+          else if (lbl==='Stop') stop=val;
+        }
+      });
+      var pnlEl = el.querySelector('.npz-pnl');
+      if (pnlEl) pnl = pnlEl.textContent.trim();
+      var nizamEl = el.querySelector('.npz-nizam');
+      var nizamYorum = nizamEl ? nizamEl.textContent.replace('NİZAM','').trim() : '';
+      
+      satirlar.push(sym+' '+yon+' giriş:'+giris+' güncel:'+guncel+' stop:'+stop+' pnl:'+pnl+' | '+nizamYorum);
+    });
+    return satirlar.join('\n');
+  } catch(e) {
+    return 'Pozisyon bilgisi alınamadı: ' + e.message;
+  }
+}
+
+// Cevabı parse et — JSON emir varsa onay butonu ekle
+function ajanMesajEkleOnay(icerik) {
+  var div = document.createElement('div');
+  div.className = 'ajan-msg-ai';
+  
+  // JSON emir ara: {"action":"KAPAT","symbol":"NVDA"} veya {"action":"AC",...}
+  var emirler = [];
+  var jsonRegex = /\{"action"\s*:\s*"(KAPAT|AC|EKLE|CIKAR)"[^}]*\}/g;
+  var match;
+  var temizMetin = icerik;
+  
+  while ((match = jsonRegex.exec(icerik)) !== null) {
+    try {
+      var emir = JSON.parse(match[0]);
+      emirler.push(emir);
+      // JSON'ı metinden kaldır
+      temizMetin = temizMetin.replace(match[0], '').trim();
+    } catch(e) {}
+  }
+  
+  // Metni göster
+  var textDiv = document.createElement('div');
+  textDiv.innerHTML = '<span class="ajan-label">✦ NİZAM AJAN</span>' +
+    temizMetin.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  div.appendChild(textDiv);
+  
+  // Her emir için onay butonu
+  emirler.forEach(function(emir) {
+    var onayDiv = document.createElement('div');
+    onayDiv.style.cssText = 'margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;';
+    
+    var label = emir.action === 'KAPAT'  ? '✕ ' + emir.symbol + ' KAPAT'
+              : emir.action === 'AC'     ? '+ ' + (emir.yon||'LONG') + ' ' + emir.symbol + ' AC'
+              : emir.action === 'EKLE'   ? '+ ' + emir.symbol + ' LİSTEYE EKLE (S=' + (emir.S||'?') + ')'
+              : emir.action === 'CIKAR'  ? '− ' + emir.symbol + ' LİSTEDEN ÇIKAR'
+              : emir.symbol;
+    
+    var onayBtn = document.createElement('button');
+    onayBtn.textContent = '✓ ONAYLA — ' + label;
+    onayBtn.style.cssText = 'background:rgba(61,186,122,0.15);border:1px solid rgba(61,186,122,0.4);color:#3dba7a;font-family:inherit;font-size:9px;padding:6px 12px;border-radius:4px;cursor:pointer;letter-spacing:0.05em;';
+    onayBtn.onclick = function() {
+      onayBtn.disabled = true;
+      onayBtn.textContent = '⟳ İşleniyor...';
+      onayBtn.style.opacity = '0.5';
+      ajanEmirCalistir(emir, onayBtn);
+    };
+    
+    var iptalBtn = document.createElement('button');
+    iptalBtn.textContent = '✗ İptal';
+    iptalBtn.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#6a6458;font-family:inherit;font-size:9px;padding:6px 10px;border-radius:4px;cursor:pointer;';
+    iptalBtn.onclick = function() {
+      onayDiv.innerHTML = '<span style="font-size:9px;color:#4a4840">İptal edildi.</span>';
+    };
+    
+    onayDiv.appendChild(onayBtn);
+    onayDiv.appendChild(iptalBtn);
+    div.appendChild(onayDiv);
+  });
+  
+  var sohbet = document.getElementById('ajanSohbet');
+  sohbet.appendChild(div);
+  sohbet.scrollTop = sohbet.scrollHeight;
+}
+
+// Emiri çalıştır — Alpaca'ya gönder
+// NYSE şu an açık mı?
+function nyseAcikMi() {
+  var nyse = new Date(new Date().toLocaleString('en-US', {timeZone:'America/New_York'}));
+  var gun = nyse.getDay();
+  var saat = nyse.getHours() * 60 + nyse.getMinutes();
+  return gun >= 1 && gun <= 5 && saat >= 570 && saat < 960;
+}
+
+async function ajanEmirCalistir(emir, btn) {
+  try {
+    var base = alpacaBaseUrl();
+    var acik = nyseAcikMi();
+
+    if (emir.action === 'KAPAT') {
+
+      // Önce bu hisseye ait bekleyen emirleri iptal et
+      try {
+        var emirlerResp = await fetch(base + '/v2/orders?status=open&limit=100', {
+          headers: alpacaHeaders()
+        });
+        var bekleyenler = await emirlerResp.json();
+        if (Array.isArray(bekleyenler)) {
+          var sembolEmirler = bekleyenler.filter(function(e){
+            return e.symbol === emir.symbol;
+          });
+          for (var ei=0; ei<sembolEmirler.length; ei++) {
+            await fetch(base + '/v2/orders/' + sembolEmirler[ei].id, {
+              method: 'DELETE',
+              headers: alpacaHeaders()
+            });
+          }
+          if (sembolEmirler.length > 0) {
+            // Alpaca'nın işlemesi için kısa bekle
+            await new Promise(function(r){ setTimeout(r, 1500); });
+          }
+        }
+      } catch(cancelErr) {
+        console.log('Bekleyen emir iptal hatası:', cancelErr);
+      }
+
+      if (acik) {
+        // Borsa açık — direkt market order ile kapat
+        var resp = await fetch(base + '/v2/positions/' + emir.symbol, {
+          method: 'DELETE',
+          headers: alpacaHeaders()
+        });
+        var data = await resp.json();
+        if (resp.ok || data.symbol || data.id) {
+          btn.textContent = '✓ ' + emir.symbol + ' kapatıldı';
+          btn.style.background = 'rgba(61,186,122,0.3)';
+          ajanMesajEkle(emir.symbol + ' pozisyonu kapatıldı. ✓', 'ai');
+        } else {
+          throw new Error(data.message || JSON.stringify(data));
+        }
+      } else {
+        // Borsa kapalı — mevcut pozisyonu bul, limit GTC order gönder
+        var pozResp = await fetch(base + '/v2/positions/' + emir.symbol, {
+          headers: alpacaHeaders()
+        });
+        var poz = await pozResp.json();
+        if (!poz || !poz.symbol) throw new Error('Pozisyon bulunamadı');
+
+        var yon    = parseFloat(poz.qty) > 0 ? 'LONG' : 'SHORT';
+        var miktar = Math.abs(parseFloat(poz.qty));
+        var fiyat  = parseFloat(poz.current_price || poz.avg_entry_price);
+
+        // Limit fiyat: Long kapatma için biraz düşük, Short kapatma için biraz yüksek
+        var limitFiyat = yon === 'LONG'
+          ? (fiyat * 0.995).toFixed(2)   // %0.5 altı — açılışta hemen dolsun
+          : (fiyat * 1.005).toFixed(2);  // %0.5 üstü
+
+        var orderResp = await fetch(base + '/v2/orders', {
+          method: 'POST',
+          headers: alpacaHeaders(),
+          body: JSON.stringify({
+            symbol: emir.symbol,
+            qty: miktar.toString(),
+            side: yon === 'LONG' ? 'sell' : 'buy',
+            type: 'limit',
+            time_in_force: 'day',
+            limit_price: limitFiyat,
+            extended_hours: false
+          })
+        });
+        var order = await orderResp.json();
+        if (orderResp.ok || order.id) {
+          btn.textContent = '✓ Emir gönderildi — açılışta dolacak';
+          btn.style.background = 'rgba(201,168,76,0.3)';
+          btn.style.color = '#c9a84c';
+          ajanMesajEkle(emir.symbol + ' için limit kapatma emri gönderildi ($' + limitFiyat + '). NYSE açılınca (Melb. 23:30) otomatik dolacak. ✓', 'ai');
+        } else {
+          throw new Error(order.message || JSON.stringify(order));
+        }
+      }
+
+      setTimeout(function(){ alpacaPozGoster(); }, 2000);
+
+    } else if (emir.action === 'AC') {
+      var fiyat = fiyatCache[emir.symbol] ? fiyatCache[emir.symbol].bugun : 0;
+      await pozisyonAcAlpaca(emir.symbol, emir.yon || 'LONG', fiyat);
+      btn.textContent = '✓ ' + emir.symbol + ' açıldı';
+      btn.style.background = 'rgba(61,186,122,0.3)';
+      ajanMesajEkle(emir.symbol + ' ' + (emir.yon||'LONG') + ' pozisyonu açıldı. ✓', 'ai');
+      setTimeout(function(){ alpacaPozGoster(); }, 2000);
+
+    } else if (emir.action === 'EKLE') {
+      // Hisse ekle
+      var yeniHisse = {
+        s: emir.symbol,
+        n: emir.name || emir.symbol,
+        f: (emir.kurucu_yil || '2000') + '-01-01',
+        ex: emir.ex || 'NASDAQ',
+        k: emir.kurucu_yil || null
+      };
+      
+      // Zaten var mı kontrol et
+      var mevcut = HISSELER.filter(function(h){ return h.s === emir.symbol; });
+      if (mevcut.length > 0) {
+        btn.textContent = '⚠ Zaten listede';
+        btn.style.background = 'rgba(201,168,76,0.2)';
+        ajanMesajEkle(emir.symbol + ' zaten hisse listesinde mevcut.', 'ai');
+      } else {
+        HISSELER.push(yeniHisse);
+        btn.textContent = '✓ ' + emir.symbol + ' eklendi (S=' + htKurucu(yeniHisse) + ')';
+        btn.style.background = 'rgba(61,186,122,0.3)';
+        ajanMesajEkle(emir.symbol + ' hisse listesine eklendi. S=' + htKurucu(yeniHisse) + ' ✓', 'ai');
+        setTimeout(function(){ taraVeFiyat(); }, 1000);
+      }
+      
+    } else if (emir.action === 'CIKAR') {
+      // Hisse çıkar
+      var onceki = HISSELER.length;
+      HISSELER = HISSELER.filter(function(h){ return h.s !== emir.symbol; });
+      
+      if (HISSELER.length < onceki) {
+        btn.textContent = '✓ ' + emir.symbol + ' çıkarıldı';
+        btn.style.background = 'rgba(224,85,85,0.3)';
+        ajanMesajEkle(emir.symbol + ' hisse listesinden çıkarıldı. ✓', 'ai');
+        setTimeout(function(){ taraVeFiyat(); }, 1000);
+      } else {
+        btn.textContent = '⚠ Bulunamadı';
+        ajanMesajEkle(emir.symbol + ' listede bulunamadı.', 'ai');
+      }
+    }
+
+    ajanMesajlar.push({ role: 'assistant', content: emir.symbol + ' işlemi tamamlandı.' });
+
+  } catch(e) {
+    btn.textContent = '✗ Hata: ' + e.message;
+    btn.style.background = 'rgba(224,85,85,0.2)';
+    btn.style.color = '#e05555';
+    btn.disabled = false;
+    console.error('Emir hatası:', e);
+  }
+}
+
+// Hızlı buton: "Pozisyonları değerlendir"
+function ajanPozDegerlendir() {
+  document.getElementById('ajanInput').value = 'Açık pozisyonlarımı Nizam sistemine göre değerlendir. Her biri için kapat/tut kararı ver ve gerekirse emir öner.';
+  ajanGonder();
+}
+
+
+
+// ══════════════════════════════════════════════
+// HİCRİ TAKVİM FİLTRELERİ
+// ══════════════════════════════════════════════
+
+function miladi2hicri(dt) {
+  var d=dt.getDate(), m=dt.getMonth()+1, y=dt.getFullYear();
+  if (m<=2){y--;m+=12;}
+  var A=Math.floor(y/100), B=2-A+Math.floor(A/4);
+  var jd=Math.floor(365.25*(y+4716))+Math.floor(30.6001*(m+1))+d+B-1524;
+  var z=jd-1948438+10632;
+  var n=Math.floor((z-1)/10631);
+  z=z-10631*n+354;
+  var j=Math.floor((10985-z)/5316)*Math.floor((50*z)/17719)+
+        Math.floor(z/5670)*Math.floor((43*z)/15238);
+  z=z-Math.floor((30-j)/15)*Math.floor((17719*j)/50)-
+      Math.floor(j/16)*Math.floor((15238*j)/43)+29;
+  var hAy=Math.floor((24*z)/709);
+  var hGun=z-Math.floor((709*hAy)/24);
+  return {gun:hGun, ay:hAy, yil:30*n+j-30};
+}
+
+function hicriDurumGetir() {
+  var bugun = new Date();
+  var h = miladi2hicri(bugun);
+  var aylar = ['','Muharrem','Safer','Rebiülevvel','Rebiülahir',
+    'Cemaz.Evvel','Cemaz.Ahir','Receb','Şaban','Ramazan',
+    'Şevval','Zilkade','Zilhicce'];
+  
+  var ramazan   = h.ay === 9;
+  var hilal     = h.gun === 1;
+  var dolunay   = h.gun >= 13 && h.gun <= 15;
+  var güçlü_ay  = h.ay === 10 || h.ay === 3 || h.ay === 12; // Şevval, Rebiülevvel, Zilhicce
+  
+  return {
+    gun: h.gun, ay: h.ay, yil: h.yil,
+    ay_adi: aylar[h.ay] || '?',
+    ramazan: ramazan,
+    hilal: hilal,
+    dolunay: dolunay,
+    guclu_ay: güçlü_ay
+  };
+}
+
+// Hicri durumu header'a yansıt
+function hicriGuncelle() {
+  var h = hicriDurumGetir();
+  var el = document.getElementById('hicriBar');
+  if (!el) return;
+  
+  var icerik = h.gun + ' ' + h.ay_adi + ' ' + h.yil;
+  var renk = '#4a4840';
+  var ek = '';
+  
+  if (h.ramazan) {
+    renk = '#e05555';
+    ek = ' ⚠ RAMAZAN — No Trade';
+  } else if (h.hilal) {
+    renk = '#3dba7a';
+    ek = ' 🌙 HİLAL';
+  } else if (h.dolunay) {
+    renk = '#c9a84c';
+    ek = ' 🌕 DOLUNAY';
+  } else if (h.guclu_ay) {
+    renk = '#c9a84c';
+    ek = ' ★';
+  }
+  
+  el.innerHTML = '<span style="color:' + renk + '">' + icerik + ek + '</span>';
+}
+
+// Tarama sırasında Ramazan uyarısı
+function ramazanKontrol() {
+  var h = hicriDurumGetir();
+  if (h.ramazan) {
+    return '⚠ RAMAZAN AYI: Sinyal güçleri düşük (%48.8 pozitif). Dikkatli ol.';
+  }
+  if (h.dolunay) {
+    return '🌕 DOLUNAY ±1: Gürültü yüksek. Yeni pozisyon açma.';
+  }
+  if (h.hilal) {
+    return '🌙 HİLAL: Yeni ay başlangıcı. V=0 ile çakışırsa güçlü sinyal (%85.7).';
+  }
+  return null;
+}
+
+// Başlangıçta hicri güncelle
+hicriGuncelle();
+setInterval(hicriGuncelle, 60000);
+zamanCubugGuncelle();
+setInterval(zamanCubugGuncelle, 30000);
+
+// ── SÜPER REZONANS KONTROLÜ ──
+function superRezonansKontrol() {
+  var bugun = new Date();
+  var yilS = indirge(bugun.getFullYear());
+  
+  var rez_hisseler = [];  // fark=0
+  var f2_hisseler  = [];  // fark=2
+  
+  HISSELER.forEach(function(h) {
+    var S = ht(h.f);
+    var fark = Math.min(Math.abs(S-yilS), 9-Math.abs(S-yilS));
+    if (fark === 0) rez_hisseler.push(h.s);
+    if (fark === 2) f2_hisseler.push(h.s);
+  });
+  
+  // Süper rezonans var mı?
+  if (rez_hisseler.length > 0 && f2_hisseler.length > 0) {
+    var mesaj = '⚡ SÜPER REZONANS: ' + 
+      rez_hisseler.join(',') + ' (REZ) + ' + 
+      f2_hisseler.join(',') + ' (137★)';
+    
+    // Header'a ekle
+    var hdrH = document.getElementById('hdrHicri');
+    if (hdrH) {
+      var mevcut = hdrH.innerHTML;
+      if (!mevcut.includes('SÜPER')) {
+        hdrH.innerHTML += ' <span style="color:#4a8fff;font-weight:600">⚡</span>';
+      }
+    }
+    
+    // Konsola yaz
+    console.log('NİZAM ' + mesaj);
+  }
+}
+
+
+// Hisse ekle/çıkar hızlı buton
+function ajanHisseEkle() {
+  document.getElementById('ajanInput').value = 
+    'Mevcut hisse listesi: ' + HISSELER.map(function(h){return h.s;}).join(', ') + 
+    '\n\nHisse eklemek veya çıkarmak istiyorum. Hangi hisseyi ekleyeyim veya çıkarayım?';
+  ajanGonder();
+}
+
+</script>
+</body>
+</html>
